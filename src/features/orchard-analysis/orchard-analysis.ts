@@ -1,0 +1,67 @@
+import type { AnalysisDataRecord } from "../../contracts/analysis-data";
+import type { OrchardAnalysisQuery, OrchardAnalysisRow, OrchardAnalysisTimelineEntry } from "./orchard-analysis.types";
+
+type DatedRecord = {
+  record: AnalysisDataRecord;
+  measuredTimestamp: number;
+  registeredTimestamp: number;
+};
+
+const toTimestamp = (value: string | null): number | null => {
+  if (value === null) return null;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
+};
+
+const compareNewestFirst = (left: DatedRecord, right: DatedRecord): number =>
+  right.measuredTimestamp - left.measuredTimestamp
+  || right.registeredTimestamp - left.registeredTimestamp
+  || left.record.id.localeCompare(right.record.id);
+
+const toRow = (record: AnalysisDataRecord): OrchardAnalysisRow => ({
+  registrationId: record.id,
+  measuredAt: record.measuredAt ?? "",
+  treatment: record.treatment,
+  diameterAverage: record.averageDiameter,
+  brix: record.brix,
+  acidity: record.acidity,
+});
+
+/**
+ * Builds the orchard medical-chart timeline. It deliberately preserves one
+ * source record per row and contains the ordering/year-boundary rules so that
+ * the UI does not reimplement analysis behavior.
+ */
+export const buildOrchardAnalysis = (
+  records: readonly AnalysisDataRecord[],
+  query: OrchardAnalysisQuery,
+): OrchardAnalysisTimelineEntry[] => {
+  const visible = records.flatMap((record): DatedRecord[] => {
+    const measuredTimestamp = toTimestamp(record.measuredAt);
+    if (
+      measuredTimestamp === null
+      || record.orchard !== query.orchard
+      || record.variety !== query.variety
+      || (query.treatment !== undefined && record.treatment !== query.treatment)
+    ) {
+      return [];
+    }
+    return [{
+      record,
+      measuredTimestamp,
+      registeredTimestamp: toTimestamp(record.registeredAt) ?? Number.NEGATIVE_INFINITY,
+    }];
+  }).sort(compareNewestFirst);
+
+  let previousYear: number | null = null;
+  return visible.flatMap(({ record, measuredTimestamp }): OrchardAnalysisTimelineEntry[] => {
+    const year = new Date(measuredTimestamp).getUTCFullYear();
+    const entries: OrchardAnalysisTimelineEntry[] = [];
+    if (year !== previousYear) {
+      entries.push({ type: "year", year });
+      previousYear = year;
+    }
+    entries.push({ type: "record", row: toRow(record) });
+    return entries;
+  });
+};

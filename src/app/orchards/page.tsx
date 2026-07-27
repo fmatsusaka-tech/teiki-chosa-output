@@ -1,5 +1,21 @@
-import Link from "next/link";
+import type { AnalysisDataRecord } from "../../contracts/analysis-data";
+import { AnalysisDataRepository } from "../../repositories/analysis-data-repository";
+import { GoogleSheetsAnalysisDataSource } from "../../repositories/google-sheets-analysis-data-source";
+import { OrchardAnalysisClient } from "./orchard-analysis-client";
 
-export default function OrchardsPage() {
-  return <main className="page-shell"><p className="eyebrow">ORCHARDS</p><h1>園地分析</h1><p className="placeholder">最大2園地を選択して、調査データを比較します。</p><Link className="back-link" href="/">ホームへ戻る</Link></main>;
+export const dynamic = "force-dynamic";
+
+const getRecords = async (): Promise<{ records: AnalysisDataRecord[]; error: string | null }> => {
+  try {
+    const repository = new AnalysisDataRepository(new GoogleSheetsAnalysisDataSource());
+    return { records: await repository.getAll(), error: null };
+  } catch (error) {
+    console.error("Failed to load orchard analysis data", error);
+    return { records: [], error: "調査データを取得できませんでした。共有設定と接続設定を確認してください。" };
+  }
+};
+
+export default async function OrchardsPage() {
+  const { records, error } = await getRecords();
+  return <OrchardAnalysisClient dataError={error} records={records} />;
 }
