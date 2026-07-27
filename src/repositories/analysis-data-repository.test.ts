@@ -54,6 +54,30 @@ describe("AnalysisDataRepository", () => {
     })]);
   });
 
+  it("preserves missing observations and converts Google Sheets date serial values", async () => {
+    const values = {
+      ...recordValues,
+      登録日時: 25569,
+      計測日: "",
+      園地名: "",
+      横径個数: "",
+      横径平均: "",
+      横径最小: "",
+      横径最大: "",
+    };
+    const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    expect(parsed).toMatchObject({
+      registeredAt: "1970-01-01T00:00:00.000Z",
+      measuredAt: null,
+      orchard: null,
+      diameterCount: null,
+      averageDiameter: null,
+      minimumDiameter: null,
+      maximumDiameter: null,
+    });
+  });
+
   it("is independent of column order", async () => {
     const reversedHeaders = [...headers].reverse();
     const records = await new AnalysisDataRepository(source(table(reversedHeaders))).getAll();

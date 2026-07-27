@@ -31,21 +31,21 @@ export type AnalysisDataHeader =
 /** `調査データ` から読取後に Output が利用するレコード。 */
 export interface AnalysisDataRecord {
   id: string;
-  registeredAt: string;
-  measuredAt: string;
+  registeredAt: string | null;
+  measuredAt: string | null;
   fiscalYear: number;
   year: number;
   month: number;
   surveyMonth: string;
   surveyPeriod: string;
-  orchard: string;
-  variety: string;
+  orchard: string | null;
+  variety: string | null;
   treatment: string | null;
   notes: string | null;
-  diameterCount: number;
-  averageDiameter: number;
-  minimumDiameter: number;
-  maximumDiameter: number;
+  diameterCount: number | null;
+  averageDiameter: number | null;
+  minimumDiameter: number | null;
+  maximumDiameter: number | null;
   brix: number | null;
   acidity: number | null;
   brixAcidityRatio: number | null;

@@ -18,7 +18,10 @@ const parsePeriodMonth = (value: string): { year: number; month: number } | null
   return match ? { year: Number(match[1]), month: Number(match[2]) } : null;
 };
 
-const toTimestamp = (value: string): number | null => {
+const toTimestamp = (value: string | null): number | null => {
+  if (value === null) {
+    return null;
+  }
   const timestamp = Date.parse(value);
   return Number.isFinite(timestamp) ? timestamp : null;
 };
@@ -77,9 +80,9 @@ const previousDifference = (current: PreparedRecord, candidates: readonly Prepar
 const toRow = (prepared: PreparedRecord, candidates: readonly PreparedRecord[]): PeriodicAnalysisRow => ({
   registrationId: prepared.record.id,
   periodYear: prepared.periodYear,
-  measuredAt: prepared.record.measuredAt,
+  measuredAt: prepared.record.measuredAt ?? "",
   orchard: prepared.record.orchard || null,
-  rawVariety: prepared.record.variety,
+  rawVariety: prepared.record.variety ?? "",
   varietyCategory: prepared.varietyCategory,
   treatment: prepared.record.treatment,
   notes: prepared.record.notes,

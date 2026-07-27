@@ -77,7 +77,7 @@ describe("buildPeriodicAnalysis", () => {
     const records = [
       record({ id: "current", measuredAt: "2026-08-15", averageDiameter: 52 }),
       record({ id: "same-day", measuredAt: "2026-08-15", averageDiameter: 40 }),
-      record({ id: "previous", measuredAt: "2026-08-14", averageDiameter: null as unknown as number }),
+      record({ id: "previous", measuredAt: "2026-08-14", averageDiameter: null }),
       record({ id: "older", measuredAt: "2026-08-01", averageDiameter: 10 }),
     ];
     expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBeNull();
@@ -89,5 +89,11 @@ describe("buildPeriodicAnalysis", () => {
       record({ id: "missing-date", measuredAt: "" }), record({ id: "extreme", averageDiameter: 9999 }),
     ];
     expect(buildPeriodicAnalysis(records, query)[0].rows.map((row) => row.registrationId)).toEqual(["extreme"]);
+  });
+
+  it("keeps a missing orchard visible but does not calculate its previous difference", () => {
+    const [row] = buildPeriodicAnalysis([record({ orchard: null, averageDiameter: null })], query)[0].rows;
+    expect(row).toMatchObject({ orchard: null, diameterAverage: null });
+    expect(row.previousDifference).toEqual({ diameterAverage: null, brix: null, acidity: null });
   });
 });

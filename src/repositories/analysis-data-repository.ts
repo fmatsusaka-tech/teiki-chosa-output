@@ -64,21 +64,21 @@ export class AnalysisDataRepository {
 
     return {
       id: this.requiredString(value(analysisDataHeaders.id), analysisDataHeaders.id, rowNumber),
-      registeredAt: this.requiredString(value(analysisDataHeaders.registeredAt), analysisDataHeaders.registeredAt, rowNumber),
-      measuredAt: this.requiredString(value(analysisDataHeaders.measuredAt), analysisDataHeaders.measuredAt, rowNumber),
+      registeredAt: this.optionalDate(value(analysisDataHeaders.registeredAt), analysisDataHeaders.registeredAt, rowNumber),
+      measuredAt: this.optionalDate(value(analysisDataHeaders.measuredAt), analysisDataHeaders.measuredAt, rowNumber),
       fiscalYear: this.requiredNumber(value(analysisDataHeaders.fiscalYear), analysisDataHeaders.fiscalYear, rowNumber),
       year: this.requiredNumber(value(analysisDataHeaders.year), analysisDataHeaders.year, rowNumber),
       month: this.requiredNumber(value(analysisDataHeaders.month), analysisDataHeaders.month, rowNumber),
       surveyMonth: this.requiredString(value(analysisDataHeaders.surveyMonth), analysisDataHeaders.surveyMonth, rowNumber),
       surveyPeriod: this.requiredString(value(analysisDataHeaders.surveyPeriod), analysisDataHeaders.surveyPeriod, rowNumber),
-      orchard: this.requiredString(value(analysisDataHeaders.orchard), analysisDataHeaders.orchard, rowNumber),
-      variety: this.requiredString(value(analysisDataHeaders.variety), analysisDataHeaders.variety, rowNumber),
+      orchard: this.optionalString(value(analysisDataHeaders.orchard), analysisDataHeaders.orchard, rowNumber),
+      variety: this.optionalString(value(analysisDataHeaders.variety), analysisDataHeaders.variety, rowNumber),
       treatment: this.optionalString(value(analysisDataHeaders.treatment), analysisDataHeaders.treatment, rowNumber),
       notes: this.optionalString(value(analysisDataHeaders.notes), analysisDataHeaders.notes, rowNumber),
-      diameterCount: this.requiredNumber(value(analysisDataHeaders.diameterCount), analysisDataHeaders.diameterCount, rowNumber),
-      averageDiameter: this.requiredNumber(value(analysisDataHeaders.averageDiameter), analysisDataHeaders.averageDiameter, rowNumber),
-      minimumDiameter: this.requiredNumber(value(analysisDataHeaders.minimumDiameter), analysisDataHeaders.minimumDiameter, rowNumber),
-      maximumDiameter: this.requiredNumber(value(analysisDataHeaders.maximumDiameter), analysisDataHeaders.maximumDiameter, rowNumber),
+      diameterCount: this.optionalNumber(value(analysisDataHeaders.diameterCount), analysisDataHeaders.diameterCount, rowNumber),
+      averageDiameter: this.optionalNumber(value(analysisDataHeaders.averageDiameter), analysisDataHeaders.averageDiameter, rowNumber),
+      minimumDiameter: this.optionalNumber(value(analysisDataHeaders.minimumDiameter), analysisDataHeaders.minimumDiameter, rowNumber),
+      maximumDiameter: this.optionalNumber(value(analysisDataHeaders.maximumDiameter), analysisDataHeaders.maximumDiameter, rowNumber),
       brix: this.optionalNumber(value(analysisDataHeaders.brix), analysisDataHeaders.brix, rowNumber),
       acidity: this.optionalNumber(value(analysisDataHeaders.acidity), analysisDataHeaders.acidity, rowNumber),
       brixAcidityRatio: this.optionalNumber(value(analysisDataHeaders.brixAcidityRatio), analysisDataHeaders.brixAcidityRatio, rowNumber),
@@ -105,6 +105,23 @@ export class AnalysisDataRepository {
       throw new Error(`調査データ ${rowNumber}行目の「${header}」を文字列へ変換できません。`);
     }
     return value.trim() || null;
+  }
+
+  private optionalDate(value: unknown, header: string, rowNumber: number): string | null {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    if (typeof value === "string") {
+      return value.trim() || null;
+    }
+    if (typeof value === "number" && Number.isFinite(value)) {
+      const milliseconds = Date.UTC(1899, 11, 30) + value * 86_400_000;
+      const date = new Date(milliseconds);
+      if (!Number.isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    }
+    throw new Error(`調査データ ${rowNumber}行目の「${header}」を日付へ変換できません。`);
   }
 
   private requiredNumber(value: unknown, header: string, rowNumber: number): number {
