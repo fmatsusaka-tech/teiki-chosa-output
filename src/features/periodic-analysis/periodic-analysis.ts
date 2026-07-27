@@ -1,5 +1,6 @@
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { getVarietyCategory } from "./variety-category";
+import { isIncludedInAnalysis } from "../../contracts/analysis-data";
+import { getVarietyCategory } from "../shared/variety-category";
 import type { PeriodicAnalysisQuery, PeriodicAnalysisRow, PeriodicAnalysisYearGroup, PreviousDifference } from "./periodic-analysis.types";
 
 type PreparedRecord = {
@@ -10,8 +11,6 @@ type PreparedRecord = {
   measuredTimestamp: number;
   registeredTimestamp: number;
 };
-
-const displayableStatuses = new Set(["正常", "横径なし", "糖度なし", "酸度なし"]);
 
 const parsePeriodMonth = (value: string): { year: number; month: number } | null => {
   const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(value);
@@ -26,15 +25,12 @@ const toTimestamp = (value: string | null): number | null => {
   return Number.isFinite(timestamp) ? timestamp : null;
 };
 
-const isDisplayable = (status: string, includeNeedsReview: boolean): boolean =>
-  displayableStatuses.has(status) || (includeNeedsReview && status === "要確認");
-
 const prepareRecords = (records: readonly AnalysisDataRecord[], includeNeedsReview: boolean): PreparedRecord[] =>
   records.flatMap((record) => {
     const period = parsePeriodMonth(record.surveyMonth);
     const category = getVarietyCategory(record.variety);
     const measuredTimestamp = toTimestamp(record.measuredAt);
-    if (!period || !category || measuredTimestamp === null || !isDisplayable(record.dataStatus, includeNeedsReview)) {
+    if (!period || !category || measuredTimestamp === null || !isIncludedInAnalysis(record, { includeNeedsReview })) {
       return [];
     }
     return [{

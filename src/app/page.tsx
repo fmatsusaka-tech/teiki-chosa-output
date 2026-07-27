@@ -9,7 +9,7 @@ const features = [
   {
     href: "/orchards",
     title: "園地分析",
-    description: "最大2園地を選び、調査データを比較します。",
+    description: "園地・品種・処理区ごとの調査履歴を時系列で確認します。",
   },
   {
     href: "/predictions",

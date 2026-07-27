@@ -1,4 +1,6 @@
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
+import { isIncludedInAnalysis } from "../../contracts/analysis-data";
+import { getVarietyCategory } from "../shared/variety-category";
 import type { OrchardAnalysisQuery, OrchardAnalysisRow, OrchardAnalysisTimelineEntry } from "./orchard-analysis.types";
 
 type DatedRecord = {
@@ -41,7 +43,8 @@ export const buildOrchardAnalysis = (
     if (
       measuredTimestamp === null
       || record.orchard !== query.orchard
-      || record.variety !== query.variety
+      || getVarietyCategory(record.variety) !== query.varietyCategory
+      || !isIncludedInAnalysis(record)
       || (query.treatment !== undefined && record.treatment !== query.treatment)
     ) {
       return [];

@@ -1,6 +1,6 @@
 export type OrchardAnalysisQuery = {
   orchard: string;
-  variety: string;
+  varietyCategory: string;
   treatment?: string | null;
 };
 

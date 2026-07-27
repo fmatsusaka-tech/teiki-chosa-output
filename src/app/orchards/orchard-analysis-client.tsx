@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { buildOrchardAnalysis } from "../../features/orchard-analysis/orchard-analysis";
 import type { OrchardAnalysisQuery, OrchardAnalysisRow } from "../../features/orchard-analysis/orchard-analysis.types";
+import { getVarietyCategory } from "../../features/shared/variety-category";
 
 const allTreatments = "__all__";
 const unsetTreatment = "__unset__";
@@ -19,14 +20,14 @@ const columns: Record<ColumnKey, Column> = {
 const initialColumns: Record<ColumnKey, boolean> = { diameter: true, brix: true, acidity: true, predictedDiameter: true, predictedBrix: true, predictedAcidity: true, rainfall30Days: true, averageTemperature30Days: true };
 
 const filterOptions = (records: readonly AnalysisDataRecord[]) => {
-  const eligible = records.filter((record) => record.orchard !== null && record.variety !== null && record.measuredAt !== null);
-  return { orchards: [...new Set(eligible.map((record) => record.orchard!))].sort((a, b) => a.localeCompare(b, "ja")), varieties: [...new Set(eligible.map((record) => record.variety!))].sort((a, b) => a.localeCompare(b, "ja")), treatments: [...new Set(eligible.map((record) => record.treatment))] };
+  const eligible = records.filter((record) => record.orchard !== null && getVarietyCategory(record.variety) !== null && record.measuredAt !== null);
+  return { orchards: [...new Set(eligible.map((record) => record.orchard!))].sort((a, b) => a.localeCompare(b, "ja")), varieties: [...new Set(eligible.map((record) => getVarietyCategory(record.variety)!))].sort((a, b) => a.localeCompare(b, "ja")), treatments: [...new Set(eligible.map((record) => record.treatment))] };
 };
 
 export function OrchardAnalysisClient({ dataError, records }: { dataError: string | null; records: readonly AnalysisDataRecord[] }) {
   const options = useMemo(() => filterOptions(records), [records]);
-  const initialRecord = records.find((record) => record.orchard !== null && record.variety !== null && record.measuredAt !== null);
-  const [query, setQuery] = useState<OrchardAnalysisQuery>({ orchard: initialRecord?.orchard ?? options.orchards[0] ?? "", variety: initialRecord?.variety ?? options.varieties[0] ?? "" });
+  const initialRecord = records.find((record) => record.orchard !== null && getVarietyCategory(record.variety) !== null && record.measuredAt !== null);
+  const [query, setQuery] = useState<OrchardAnalysisQuery>({ orchard: initialRecord?.orchard ?? options.orchards[0] ?? "", varietyCategory: getVarietyCategory(initialRecord?.variety) ?? options.varieties[0] ?? "" });
   const [treatmentSelection, setTreatmentSelection] = useState(allTreatments);
   const [visible, setVisible] = useState(initialColumns);
   const [showColumnPicker, setShowColumnPicker] = useState(false);
@@ -40,7 +41,7 @@ export function OrchardAnalysisClient({ dataError, records }: { dataError: strin
     <header className="orchard-title"><p className="eyebrow">ORCHARDS</p><h1>園地分析</h1><p>1回の調査を1行として表示する時系列カルテです。</p></header>
     <section className="orchard-filters" aria-label="園地分析の検索条件">
       <label>園地<select value={query.orchard} onChange={(event) => setQuery({ ...query, orchard: event.target.value })}>{options.orchards.map((orchard) => <option key={orchard} value={orchard}>{orchard}</option>)}</select></label>
-      <label>品種<select value={query.variety} onChange={(event) => setQuery({ ...query, variety: event.target.value })}>{options.varieties.map((variety) => <option key={variety} value={variety}>{variety}</option>)}</select></label>
+      <label>品種<select value={query.varietyCategory} onChange={(event) => setQuery({ ...query, varietyCategory: event.target.value })}>{options.varieties.map((variety) => <option key={variety} value={variety}>{variety}</option>)}</select></label>
       <label>処理区<select value={treatmentSelection} onChange={(event) => setTreatmentSelection(event.target.value)}><option value={allTreatments}>すべて</option>{options.treatments.map((treatment) => <option key={treatment ?? unsetTreatment} value={treatment ?? unsetTreatment}>{treatment ?? "（未設定）"}</option>)}</select></label>
     </section>
     <section className="orchard-results" aria-label="園地分析の時系列一覧">

@@ -55,7 +55,21 @@ export interface AnalysisDataRecord {
   source: string | null;
 }
 
-/** 通常の分析・予測へ含めるデータ状態。 */
+export type AnalysisInclusionOptions = { includeNeedsReview?: boolean };
+
+const standardAnalysisStatuses = new Set(["正常", "横径なし", "糖度なし", "酸度なし"]);
+
+/**
+ * Output全体で使用する分析対象の判定。
+ * 欠測はデータ状態であり、レコードを除外する理由にはしない。
+ */
+export const isIncludedInAnalysis = (
+  record: Pick<AnalysisDataRecord, "dataStatus">,
+  options: AnalysisInclusionOptions = {},
+): boolean => standardAnalysisStatuses.has(record.dataStatus)
+  || (options.includeNeedsReview === true && record.dataStatus === "要確認");
+
+/** @deprecated `isIncludedInAnalysis` を使用する。 */
 export const isIncludedInStandardAnalysis = (
   record: Pick<AnalysisDataRecord, "dataStatus">,
-): boolean => record.dataStatus === "正常";
+): boolean => isIncludedInAnalysis(record);

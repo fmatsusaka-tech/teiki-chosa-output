@@ -1,7 +1,8 @@
 import {
   analysisDataHeaders,
   type AnalysisDataRecord,
-  isIncludedInStandardAnalysis,
+  isIncludedInAnalysis,
+  type AnalysisInclusionOptions,
 } from "../contracts/analysis-data";
 
 const analysisDataTabName = "調査データ";
@@ -33,9 +34,9 @@ export class AnalysisDataRepository {
     return dataRows.map((row, index) => this.toRecord(row, headerIndexes, index + 2));
   }
 
-  async getStandardRecords(): Promise<AnalysisDataRecord[]> {
+  async getStandardRecords(options?: AnalysisInclusionOptions): Promise<AnalysisDataRecord[]> {
     const records = await this.getAll();
-    return records.filter(isIncludedInStandardAnalysis);
+    return records.filter((record) => isIncludedInAnalysis(record, options));
   }
 
   private resolveHeaderIndexes(headers: readonly unknown[]): Map<string, number> {

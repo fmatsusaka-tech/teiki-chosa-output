@@ -103,7 +103,7 @@ describe("AnalysisDataRepository", () => {
     await expect(new AnalysisDataRepository(source(table(headers, invalidValues))).getAll()).rejects.toThrow("横径平均");
   });
 
-  it("filters standard records with isIncludedInStandardAnalysis", async () => {
+  it("filters standard records with the shared inclusion rule", async () => {
     const nonStandardValues: Record<string, unknown> = {
       ...recordValues,
       登録ID: "record-2",
@@ -113,6 +113,7 @@ describe("AnalysisDataRepository", () => {
     const repository = new AnalysisDataRepository(source(rows));
 
     await expect(repository.getStandardRecords()).resolves.toHaveLength(1);
+    await expect(repository.getStandardRecords({ includeNeedsReview: true })).resolves.toHaveLength(2);
     await expect(repository.getAll()).resolves.toHaveLength(2);
   });
 });
