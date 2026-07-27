@@ -16,3 +16,9 @@ export type OrchardAnalysisRow = {
 export type OrchardAnalysisTimelineEntry =
   | { type: "year"; year: number }
   | { type: "record"; row: OrchardAnalysisRow };
+
+export type OrchardAnalysisFilterOptions = {
+  orchards: string[];
+  varietyCategories: string[];
+  treatments: (string | null)[];
+};

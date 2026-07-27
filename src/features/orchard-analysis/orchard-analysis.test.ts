@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { buildOrchardAnalysis } from "./orchard-analysis";
+import { buildOrchardAnalysis, getOrchardAnalysisFilterOptions } from "./orchard-analysis";
 
 const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => ({
   id: "id-1", registeredAt: null, measuredAt: "2026-07-01", fiscalYear: 2026, year: 2026, month: 7,
@@ -11,6 +11,20 @@ const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => (
 });
 
 describe("buildOrchardAnalysis", () => {
+  it("検索候補を園地、品種カテゴリ、処理区の順に連動させる", () => {
+    const records = [
+      record({ id: "yura-a", orchard: "吉川", variety: "ゆら早生", treatment: "A" }),
+      record({ id: "early", orchard: "吉川", variety: "早生", treatment: "B" }),
+      record({ id: "yamashita", orchard: "吉川", variety: "山下紅", treatment: "C" }),
+      record({ id: "other", orchard: "別園地", variety: "田口", treatment: "D" }),
+      record({ id: "review", orchard: "吉川", variety: "田口", treatment: "E", dataStatus: "要確認" }),
+    ];
+
+    expect(getOrchardAnalysisFilterOptions(records).orchards).toEqual(["吉川", "別園地"]);
+    expect(getOrchardAnalysisFilterOptions(records, "吉川").varietyCategories).toEqual(["ゆら早生", "早生(宮川・興津 等、又は山下紅)"]);
+    expect(getOrchardAnalysisFilterOptions(records, "吉川", "早生(宮川・興津 等、又は山下紅)").treatments).toEqual(["B", "C"]);
+  });
+
   it("園地・品種で絞り込み、最新日付順に1調査を1行として返す", () => {
     const result = buildOrchardAnalysis([
       record({ id: "older", measuredAt: "2026-07-01" }),

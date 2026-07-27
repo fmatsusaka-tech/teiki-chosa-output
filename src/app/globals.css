@@ -106,12 +106,13 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .orchard-column-picker input { margin: 0; accent-color: #1f4d2b; }
 .orchard-empty { margin: 0; padding: 22px 12px; color: #5d6b60; font-size: .88rem; }
 .orchard-table { border-bottom: 1px solid #d2dbd2; background: #fff; }
+.orchard-horizontal-scroll { overflow-x: auto; overflow-y: visible; scrollbar-width: thin; }
+.orchard-table-content { width: max-content; }
 .orchard-column-headings, .orchard-row { display: flex; min-width: 0; height: 37px; border-bottom: 1px solid #e0e6e0; }
 .orchard-column-headings { position: sticky; top: 125px; z-index: 11; height: 30px; background: #f8faf7; color: #536157; font-size: .68rem; font-weight: 800; }
 .orchard-date { position: sticky; left: 0; z-index: 5; display: flex; flex: 0 0 58px; width: 58px; align-items: center; overflow: hidden; border-right: 1px solid #ced8cf; padding: 0 7px; background: inherit; font-size: .82rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .orchard-column-headings .orchard-date { z-index: 12; background: #f8faf7; }
-.orchard-scroll-area { min-width: 0; flex: 1; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
-.orchard-values { display: grid; width: max-content; min-width: 100%; height: 100%; align-items: center; font-size: .82rem; font-variant-numeric: tabular-nums; }
+.orchard-values { display: grid; flex: 0 0 auto; width: max-content; height: 100%; align-items: center; font-size: .82rem; font-variant-numeric: tabular-nums; }
 .orchard-values span { overflow: hidden; padding: 0 6px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .orchard-column-headings .orchard-values span { text-align: center; }
 .orchard-row:nth-child(even) { background: #fbfcfa; }
