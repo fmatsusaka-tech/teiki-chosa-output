@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI定期調査システム",
-  description: "まつさか農園の柑橘定期調査入力・分析システム",
+  title: "定期調査 Output",
+  description: "柑橘の定期調査データを分析・比較・予測するためのOutputシステム",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
