@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prediction:masters:build": "tsc -p tsconfig.scripts.json",
+    "prediction:masters:summary": "npm run prediction:masters:build && node --env-file=.env.prediction.local .prediction-cli/scripts/generate-prediction-masters.js summary",
+    "prediction:masters:dry-run": "npm run prediction:masters:build && node --env-file=.env.prediction.local .prediction-cli/scripts/generate-prediction-masters.js dry-run"
   },
   "dependencies": {
     "next": "^15.4.0",
