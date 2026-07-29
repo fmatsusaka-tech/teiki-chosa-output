@@ -12,6 +12,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 tsconfig.tsbuildinfo
+.prediction-cli/
 
 # Python
 __pycache__/
