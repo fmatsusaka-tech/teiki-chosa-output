@@ -1,5 +1,9 @@
+import { sortPredictionMasterBundle } from "./prediction-master-contract";
 import { extractPredictionMasters } from "./prediction-master-extractor";
-import { validatePredictionMasters } from "./prediction-master-validator";
+import {
+  validateExtractedModelConsistency,
+  validatePredictionMasters,
+} from "./prediction-master-validator";
 import type {
   LegacyPredictionSheet,
   PredictionMasterBundle,
@@ -10,17 +14,17 @@ export const generatePredictionMasters = (
   dataVersion: string,
   generatedAt: string,
 ): PredictionMasterBundle => {
-  const extracted = extractPredictionMasters(
-    sheets,
-    dataVersion,
-    generatedAt,
-  );
+  const extracted = extractPredictionMasters(sheets, dataVersion, generatedAt);
+  validateExtractedModelConsistency(extracted.models);
   const models = [
     ...new Map(
       extracted.models.map((model) => [model.predictionModel, model]),
     ).values(),
   ];
-  const bundle = { models, coefficients: extracted.coefficients };
-  validatePredictionMasters(bundle);
+  const bundle = sortPredictionMasterBundle({
+    models,
+    coefficients: extracted.coefficients,
+  });
+  validatePredictionMasters(bundle, dataVersion);
   return bundle;
 };

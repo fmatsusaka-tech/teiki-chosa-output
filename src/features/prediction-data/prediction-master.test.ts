@@ -1,17 +1,28 @@
 import { describe, expect, it } from "vitest";
 import {
+  predictionMetricOrder,
+  predictionModelOrder,
+  sortPredictionMasterBundle,
+  sourceSheetByMetric,
+} from "./prediction-master-contract";
+import {
   extractLegacyPredictionSheet,
   toMonthDay,
 } from "./prediction-master-extractor";
 import { formatPredictionSummary } from "./prediction-master-report";
 import { verifyPredictionRegressions } from "./prediction-master-regression";
-import { validatePredictionMasters } from "./prediction-master-validator";
+import {
+  validateExtractedModelConsistency,
+  validatePredictionMasters,
+} from "./prediction-master-validator";
 import type {
   LegacyPredictionSheet,
   PredictionMasterBundle,
-  PredictionMetric,
   SheetCell,
 } from "./prediction-master.types";
+
+const dataVersion = "1.0.0";
+const generatedAt = "2026-07-29T12:34:56+09:00";
 
 const cell = (
   formattedValue?: string,
@@ -39,38 +50,28 @@ const extractionSheet = (): LegacyPredictionSheet => {
   return { title: "横径予測", grid };
 };
 
-const expectedModels = [
-  "ゆら早生",
-  "興津早生",
-  "田口早生",
-  "向山温州",
-  "林温州",
-  "丹生温州",
-];
-const expectedMetrics: PredictionMetric[] = ["横径", "糖度", "クエン酸"];
-
 const completeBundle = (): PredictionMasterBundle => {
-  const models = expectedModels.map((predictionModel) => ({
+  const models = predictionModelOrder.map((predictionModel) => ({
     displayCategory: predictionModel,
     predictionModel,
     targetMonthDay: "01-03",
     active: true as const,
     selectionCriteria: "",
     sourceYears: "",
-    dataVersion: "1",
-    generatedAt: "now",
+    dataVersion,
+    generatedAt,
   }));
-  const coefficients = expectedMetrics.flatMap((metric) =>
-    expectedModels.flatMap((predictionModel) =>
+  const coefficients = predictionMetricOrder.flatMap((metric) =>
+    predictionModelOrder.flatMap((predictionModel) =>
       ["01-01", "01-02", "01-03"].map((monthDay, index) => ({
         metric,
         predictionModel,
         monthDay,
         coefficient: index + 1,
-        sourceSheet: `${metric}予測`,
-        sourceCell: `'${metric}予測'!A${index + 1}`,
-        dataVersion: "1",
-        generatedAt: "now",
+        sourceSheet: sourceSheetByMetric[metric],
+        sourceCell: `'${sourceSheetByMetric[metric]}'!A${index + 1}`,
+        dataVersion,
+        generatedAt,
       })),
     ),
   );
@@ -81,8 +82,8 @@ describe("prediction master extraction", () => {
   it("見出しでモデル別係数を抽出し、AA以降の原典セルを保持する", () => {
     const result = extractLegacyPredictionSheet(
       extractionSheet(),
-      "1.0.0",
-      "2026-07-28T00:00:00+09:00",
+      dataVersion,
+      generatedAt,
     );
     expect(result.coefficients).toEqual([
       expect.objectContaining({
@@ -105,8 +106,8 @@ describe("prediction master extraction", () => {
   it("TRUEと逆算列を係数として取得しない", () => {
     const result = extractLegacyPredictionSheet(
       extractionSheet(),
-      "1",
-      "now",
+      dataVersion,
+      generatedAt,
     );
     expect(result.coefficients.map((row) => row.coefficient)).toEqual([1, 1.1]);
   });
@@ -118,14 +119,124 @@ describe("prediction master extraction", () => {
 });
 
 describe("prediction master validation", () => {
-  it("6モデル・3指標の日別連続係数を受理する", () => {
-    expect(() => validatePredictionMasters(completeBundle())).not.toThrow();
+  it("正式な6モデル・3指標の日別連続Bundleを受理する", () => {
+    expect(() =>
+      validatePredictionMasters(completeBundle(), dataVersion),
+    ).not.toThrow();
   });
 
   it("モデル0件と係数0件を拒否する", () => {
     expect(() =>
-      validatePredictionMasters({ models: [], coefficients: [] }),
+      validatePredictionMasters({ models: [], coefficients: [] }, dataVersion),
     ).toThrow("予測モデル数");
+  });
+
+  it("未知モデルを拒否する", () => {
+    const bundle = completeBundle();
+    bundle.models[0].predictionModel = "未知モデル";
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
+      "未知の予測モデル",
+    );
+  });
+
+  it("未知指標を拒否する", () => {
+    const bundle = completeBundle();
+    bundle.coefficients[0].metric = "未知指標" as never;
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
+      "未知の指標",
+    );
+  });
+
+  it("係数側の未知モデルを拒否する", () => {
+    const bundle = completeBundle();
+    bundle.coefficients[0].predictionModel = "未知モデル";
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
+      "係数の予測モデルがモデルマスタにありません",
+    );
+  });
+
+  it("指標と原典シートの不一致を拒否する", () => {
+    const bundle = completeBundle();
+    bundle.coefficients[0].sourceSheet = "糖度予測";
+    bundle.coefficients[0].sourceCell = "'糖度予測'!A1";
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
+      "指標と原典シートが一致しません",
+    );
+  });
+
+  it("sourceSheetとsourceCellのシート名不一致を拒否する", () => {
+    const bundle = completeBundle();
+    bundle.coefficients[0].sourceCell = "'糖度予測'!A1";
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
+      "原典シートと原典セルが一致しません",
+    );
+  });
+
+  it("Mapでまとめる前に3原典シート間のモデル属性不一致を拒否する", () => {
+    const model = completeBundle().models[0];
+    expect(() =>
+      validateExtractedModelConsistency([
+        model,
+        { ...model },
+        { ...model, targetMonthDay: "01-04" },
+      ]),
+    ).toThrow("3原典シート間でモデル属性が一致しません");
+  });
+
+  it("3原典シートのうち1シートでモデルが欠けている場合を拒否する", () => {
+    const model = completeBundle().models[0];
+    expect(() =>
+      validateExtractedModelConsistency([model, { ...model }]),
+    ).toThrow("3原典シートすべてにモデルがありません");
+  });
+  it("不正なdataVersionを拒否する", () => {
+    const bundle = completeBundle();
+    bundle.models[0].dataVersion = "1";
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
+      "無効なデータ版",
+    );
+  });
+
+  it("行ごとのdataVersion不一致を拒否する", () => {
+    const bundle = completeBundle();
+    bundle.coefficients[0].dataVersion = "1.0.1";
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
+      "データ版がCLI指定値と一致しません",
+    );
+  });
+
+  it("全行で一致するdataVersionがCLI指定値と異なる場合を拒否する", () => {
+    const bundle = completeBundle();
+    for (const model of bundle.models) model.dataVersion = "1.0.1";
+    for (const coefficient of bundle.coefficients) {
+      coefficient.dataVersion = "1.0.1";
+    }
+    expect(() => validatePredictionMasters(bundle, "1.0.0")).toThrow(
+      "データ版がCLI指定値と一致しません",
+    );
+  });
+  it("不正なgeneratedAtを拒否する", () => {
+    const bundle = completeBundle();
+    bundle.models[0].generatedAt = "now";
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
+      "無効な生成日時",
+    );
+  });
+
+  it("行ごとのgeneratedAt不一致を拒否する", () => {
+    const bundle = completeBundle();
+    bundle.coefficients[0].generatedAt = "2026-07-29T12:34:57+09:00";
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
+      "生成日時が全行で一致しません",
+    );
+  });
+
+  it("重複キーを拒否する", () => {
+    const bundle = completeBundle();
+    bundle.coefficients.push({ ...bundle.coefficients[0] });
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
+      "重複した係数キー",
+    );
   });
 
   it("欠落日を拒否する", () => {
@@ -138,14 +249,35 @@ describe("prediction master validation", () => {
           row.monthDay === "01-02"
         ),
     );
-    expect(() => validatePredictionMasters(bundle)).toThrow(
+    expect(() => validatePredictionMasters(bundle, dataVersion)).toThrow(
       "日別係数が連続していません",
     );
   });
 
+  it("モデルと係数を正式順へ並べる", () => {
+    const bundle = completeBundle();
+    const sorted = sortPredictionMasterBundle({
+      models: [...bundle.models].reverse(),
+      coefficients: [...bundle.coefficients].reverse(),
+    });
+    expect(sorted.models.map((row) => row.predictionModel)).toEqual(
+      predictionModelOrder,
+    );
+    expect(
+      sorted.coefficients
+        .slice(0, 4)
+        .map((row) => [row.metric, row.predictionModel, row.monthDay]),
+    ).toEqual([
+      ["横径", "ゆら早生", "01-01"],
+      ["横径", "ゆら早生", "01-02"],
+      ["横径", "ゆら早生", "01-03"],
+      ["横径", "興津早生", "01-01"],
+    ]);
+  });
+
   it("空Summaryを拒否する", () => {
     expect(() =>
-      formatPredictionSummary({ models: [], coefficients: [] }, "1"),
+      formatPredictionSummary({ models: [], coefficients: [] }, dataVersion),
     ).toThrow("空のSummary");
   });
 });
@@ -167,10 +299,10 @@ describe("prediction regression", () => {
         predictionModel: model,
         monthDay,
         coefficient,
-        sourceSheet: "s",
-        sourceCell: "'s'!A1",
-        dataVersion: "1",
-        generatedAt: "now",
+        sourceSheet: sourceSheetByMetric[metric],
+        sourceCell: `'${sourceSheetByMetric[metric]}'!A1`,
+        dataVersion,
+        generatedAt,
       });
     }
     const results = verifyPredictionRegressions(bundle);

@@ -1,19 +1,51 @@
+import {
+  predictionMetricOrder,
+  predictionModelOrder,
+  sourceSheetByMetric,
+} from "./prediction-master-contract";
 import type {
   PredictionCoefficientMaster,
   PredictionMasterBundle,
+  PredictionModelMaster,
 } from "./prediction-master.types";
 
-const expectedModels = [
-  "ゆら早生",
-  "興津早生",
-  "田口早生",
-  "向山温州",
-  "林温州",
-  "丹生温州",
-] as const;
-const expectedMetrics = ["横径", "糖度", "クエン酸"] as const;
-
 const monthDayPattern = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+const dataVersionPattern = /^\d+\.\d+\.\d+$/;
+const generatedAtPattern =
+  /^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])T([01]\d|2[0-3]):[0-5]\d:[0-5]\d\+09:00$/;
+const sourceCellPattern = /^'([^']+)'![A-Z]+[1-9]\d*$/;
+const modelAttributeKeys = [
+  "displayCategory",
+  "predictionModel",
+  "targetMonthDay",
+  "active",
+  "selectionCriteria",
+  "sourceYears",
+] as const;
+const modelStringKeys = [
+  "displayCategory",
+  "predictionModel",
+  "targetMonthDay",
+  "selectionCriteria",
+  "sourceYears",
+  "dataVersion",
+  "generatedAt",
+] as const;
+const coefficientStringKeys = [
+  "metric",
+  "predictionModel",
+  "monthDay",
+  "sourceSheet",
+  "sourceCell",
+  "dataVersion",
+  "generatedAt",
+] as const;
+
+function assertString(value: unknown, label: string): asserts value is string {
+  if (typeof value !== "string") {
+    throw new Error(`${label}は文字列ではありません。`);
+  }
+}
 
 const monthDayDate = (value: string, year: number): Date => {
   if (!monthDayPattern.test(value)) throw new Error(`無効な月日です: ${value}`);
@@ -28,6 +60,41 @@ const monthDayDate = (value: string, year: number): Date => {
 const unique = (values: string[], label: string): void => {
   if (new Set(values).size !== values.length) {
     throw new Error(`重複した${label}があります。`);
+  }
+};
+
+const validateDataVersion = (
+  value: string,
+  expectedDataVersion: string,
+): void => {
+  if (!dataVersionPattern.test(value)) {
+    throw new Error(`無効なデータ版です: ${value || "(空)"}`);
+  }
+  if (value !== expectedDataVersion) {
+    throw new Error(
+      `データ版がCLI指定値と一致しません: expected=${expectedDataVersion} actual=${value}`,
+    );
+  }
+};
+
+const validateGeneratedAt = (value: string): void => {
+  const parsed = new Date(value);
+  const local = new Date(parsed.getTime() + 9 * 60 * 60 * 1000);
+  const canonical = Number.isNaN(parsed.getTime())
+    ? ""
+    : `${String(local.getUTCFullYear()).padStart(4, "0")}-${String(
+        local.getUTCMonth() + 1,
+      ).padStart(2, "0")}-${String(local.getUTCDate()).padStart(
+        2,
+        "0",
+      )}T${String(local.getUTCHours()).padStart(2, "0")}:${String(
+        local.getUTCMinutes(),
+      ).padStart(2, "0")}:${String(local.getUTCSeconds()).padStart(
+        2,
+        "0",
+      )}+09:00`;
+  if (!generatedAtPattern.test(value) || canonical !== value) {
+    throw new Error(`無効な生成日時です: ${value}`);
   }
 };
 
@@ -58,15 +125,67 @@ const validateDailyContinuity = (
   }
 };
 
+export const validateExtractedModelConsistency = (
+  models: readonly PredictionModelMaster[],
+): void => {
+  const byModel = new Map<string, PredictionModelMaster[]>();
+  for (const model of models) {
+    const rows = byModel.get(model.predictionModel) ?? [];
+    rows.push(model);
+    byModel.set(model.predictionModel, rows);
+  }
+  for (const [predictionModel, rows] of byModel) {
+    if (rows.length !== 3) {
+      throw new Error(
+        `3原典シートすべてにモデルがありません: ${predictionModel}/${rows.length}件`,
+      );
+    }
+    const reference = rows[0];
+    for (const row of rows.slice(1)) {
+      for (const key of modelAttributeKeys) {
+        if (row[key] !== reference[key]) {
+          throw new Error(
+            `3原典シート間でモデル属性が一致しません: ${predictionModel}/${key}`,
+          );
+        }
+      }
+    }
+  }
+};
+
 export const validatePredictionMasters = (
   bundle: PredictionMasterBundle,
+  expectedDataVersion: string,
 ): void => {
-  if (bundle.models.length !== expectedModels.length) {
+  if (bundle.models.length !== predictionModelOrder.length) {
     throw new Error(`予測モデル数が6件ではありません: ${bundle.models.length}`);
   }
   if (bundle.coefficients.length === 0) {
     throw new Error("係数が0件です。");
   }
+  if (!dataVersionPattern.test(expectedDataVersion)) {
+    throw new Error(
+      `無効なCLI指定データ版です: ${expectedDataVersion || "(空)"}`,
+    );
+  }
+
+  for (const model of bundle.models) {
+    for (const key of modelStringKeys) {
+      assertString(model[key], `予測モデル.${key}`);
+    }
+    if (model.active !== true) {
+      throw new Error(
+        `予測モデル.activeはtrueではありません: ${model.predictionModel}`,
+      );
+    }
+    if (!predictionModelOrder.includes(model.predictionModel as never)) {
+      throw new Error(`未知の予測モデルです: ${model.predictionModel}`);
+    }
+    monthDayDate(model.targetMonthDay, 2000);
+    validateDataVersion(model.dataVersion, expectedDataVersion);
+    validateGeneratedAt(model.generatedAt);
+  }
+
   unique(
     bundle.models.map((item) => item.predictionModel),
     "予測モデル",
@@ -81,39 +200,59 @@ export const validatePredictionMasters = (
   const actualModels = new Set(
     bundle.models.map((item) => item.predictionModel),
   );
-  for (const model of expectedModels) {
-    if (!actualModels.has(model)) throw new Error(`予測モデルがありません: ${model}`);
+  for (const model of predictionModelOrder) {
+    if (!actualModels.has(model))
+      throw new Error(`予測モデルがありません: ${model}`);
   }
 
-  const actualMetrics = new Set(
-    bundle.coefficients.map((item) => item.metric),
-  );
-  for (const metric of expectedMetrics) {
-    if (!actualMetrics.has(metric)) throw new Error(`指標がありません: ${metric}`);
+  const generatedAt = bundle.models[0].generatedAt;
+  for (const item of bundle.coefficients) {
+    for (const key of coefficientStringKeys) {
+      assertString(item[key], `予測係数.${key}`);
+    }
+    if (!predictionMetricOrder.includes(item.metric as never)) {
+      throw new Error(`未知の指標です: ${item.metric}`);
+    }
+    if (!actualModels.has(item.predictionModel)) {
+      throw new Error(
+        `係数の予測モデルがモデルマスタにありません: ${item.predictionModel}`,
+      );
+    }
+    monthDayDate(item.monthDay, 2000);
+    if (!Number.isFinite(item.coefficient) || item.coefficient <= 0) {
+      throw new Error(`無効な係数です: ${item.sourceCell}`);
+    }
+    const expectedSheet = sourceSheetByMetric[item.metric];
+    if (item.sourceSheet !== expectedSheet) {
+      throw new Error(
+        `指標と原典シートが一致しません: ${item.metric}/${item.sourceSheet}`,
+      );
+    }
+    const sourceCell = sourceCellPattern.exec(item.sourceCell);
+    if (!sourceCell || sourceCell[1] !== item.sourceSheet) {
+      throw new Error(`原典シートと原典セルが一致しません: ${item.sourceCell}`);
+    }
+    validateDataVersion(item.dataVersion, expectedDataVersion);
+    validateGeneratedAt(item.generatedAt);
+    if (item.generatedAt !== generatedAt) {
+      throw new Error(`生成日時が全行で一致しません: ${item.sourceCell}`);
+    }
   }
 
   for (const model of bundle.models) {
-    monthDayDate(model.targetMonthDay, 2000);
-    for (const metric of expectedMetrics) {
+    if (model.generatedAt !== generatedAt) {
+      throw new Error(`生成日時が全行で一致しません: ${model.predictionModel}`);
+    }
+    for (const metric of predictionMetricOrder) {
       const rows = bundle.coefficients.filter(
         (item) =>
           item.metric === metric &&
           item.predictionModel === model.predictionModel,
       );
       if (rows.length === 0) {
-        throw new Error(`${metric}/${model.predictionModel} の係数がありません。`);
-      }
-      for (const item of rows) {
-        monthDayDate(item.monthDay, 2000);
-        if (!Number.isFinite(item.coefficient) || item.coefficient <= 0) {
-          throw new Error(`無効な係数です: ${item.sourceCell}`);
-        }
-        if (
-          item.sourceSheet.length === 0 ||
-          !/^'.+'![A-Z]+[1-9]\d*$/.test(item.sourceCell)
-        ) {
-          throw new Error(`無効な原典セルです: ${item.sourceCell}`);
-        }
+        throw new Error(
+          `${metric}/${model.predictionModel} の係数がありません。`,
+        );
       }
       validateDailyContinuity(rows, model.targetMonthDay);
     }
