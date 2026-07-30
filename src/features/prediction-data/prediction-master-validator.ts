@@ -155,7 +155,7 @@ export const validateExtractedModelConsistency = (
 
 export const validatePredictionMasters = (
   bundle: PredictionMasterBundle,
-  expectedDataVersion = bundle.models[0]?.dataVersion ?? "",
+  expectedDataVersion: string,
 ): void => {
   if (bundle.models.length !== predictionModelOrder.length) {
     throw new Error(`予測モデル数が6件ではありません: ${bundle.models.length}`);

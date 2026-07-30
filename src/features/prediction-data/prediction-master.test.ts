@@ -183,6 +183,12 @@ describe("prediction master validation", () => {
     ).toThrow("3原典シート間でモデル属性が一致しません");
   });
 
+  it("3原典シートのうち1シートでモデルが欠けている場合を拒否する", () => {
+    const model = completeBundle().models[0];
+    expect(() =>
+      validateExtractedModelConsistency([model, { ...model }]),
+    ).toThrow("3原典シートすべてにモデルがありません");
+  });
   it("不正なdataVersionを拒否する", () => {
     const bundle = completeBundle();
     bundle.models[0].dataVersion = "1";
@@ -199,6 +205,16 @@ describe("prediction master validation", () => {
     );
   });
 
+  it("全行で一致するdataVersionがCLI指定値と異なる場合を拒否する", () => {
+    const bundle = completeBundle();
+    for (const model of bundle.models) model.dataVersion = "1.0.1";
+    for (const coefficient of bundle.coefficients) {
+      coefficient.dataVersion = "1.0.1";
+    }
+    expect(() => validatePredictionMasters(bundle, "1.0.0")).toThrow(
+      "データ版がCLI指定値と一致しません",
+    );
+  });
   it("不正なgeneratedAtを拒否する", () => {
     const bundle = completeBundle();
     bundle.models[0].generatedAt = "now";
