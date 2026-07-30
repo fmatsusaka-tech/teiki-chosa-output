@@ -103,6 +103,25 @@ export type PredictionMasterWritePlan = {
   serialized: SerializedPredictionMasters;
   batch: PredictionMasterBatchUpdate;
 };
+export type PredictionMasterWriteResult = PredictionMasterWritePlan & {
+  status: "dry-run" | "confirmed" | "confirmed-after-unknown";
+};
+
+export class PredictionMasterBatchStateUnknownError extends Error {
+  constructor() {
+    super("batch送信後に応答を確認できず、適用状態が不明です。");
+    this.name = "PredictionMasterBatchStateUnknownError";
+  }
+}
+
+export class PredictionMasterWriteStateUnknownError extends Error {
+  constructor() {
+    super(
+      "batch送信後の適用状態が不明です。自動再送せず、手動確認が必要です。",
+    );
+    this.name = "PredictionMasterWriteStateUnknownError";
+  }
+}
 
 const forbiddenSheetTitles = new Set([
   "調査データ",
@@ -411,16 +430,31 @@ export const runPredictionMasterWrite = async (
   config: PredictionMasterTargetConfig,
   provider: PredictionMasterWriteProvider,
   execute: boolean,
-): Promise<PredictionMasterWritePlan> => {
+): Promise<PredictionMasterWriteResult> => {
   const plan = await planPredictionMasterWrite(
     bundle,
     dataVersion,
     config,
     provider,
   );
-  if (!execute) return plan;
-  await provider.batchUpdate(config.targetSpreadsheetId, plan.batch);
+  if (!execute) return { ...plan, status: "dry-run" };
+  try {
+    await provider.batchUpdate(config.targetSpreadsheetId, plan.batch);
+  } catch (error) {
+    if (!(error instanceof PredictionMasterBatchStateUnknownError)) {
+      throw error;
+    }
+    try {
+      const actual = await provider.readMasterSheets(
+        config.targetSpreadsheetId,
+      );
+      verifyPredictionMasterReadback(plan.serialized, actual);
+      return { ...plan, status: "confirmed-after-unknown" };
+    } catch {
+      throw new PredictionMasterWriteStateUnknownError();
+    }
+  }
   const actual = await provider.readMasterSheets(config.targetSpreadsheetId);
   verifyPredictionMasterReadback(plan.serialized, actual);
-  return plan;
+  return { ...plan, status: "confirmed" };
 };

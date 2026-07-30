@@ -13,6 +13,8 @@ import {
   predictionMasterSpreadsheetTitle,
   predictionModelHeaders,
   predictionModelSheetTitle,
+  PredictionMasterBatchStateUnknownError,
+  PredictionMasterWriteStateUnknownError,
   runPredictionMasterWrite,
   serializePredictionMasters,
   verifyPredictionMasterReadback,
@@ -343,5 +345,98 @@ describe("Prediction Master writer flow", () => {
       runPredictionMasterWrite(bundle(), dataVersion, config, mock, true),
     ).rejects.toThrow("再読込値");
     expect(mock.batchCalls).toBe(1);
+  });
+  it("batch送信前の通信失敗では再読込しない", async () => {
+    let batchCalls = 0;
+    let readCalls = 0;
+    const mock: PredictionMasterWriteProvider = {
+      getMetadata: async () => createMetadata(),
+      batchUpdate: async () => {
+        batchCalls += 1;
+        throw new Error("送信前に失敗");
+      },
+      readMasterSheets: async () => {
+        readCalls += 1;
+        throw new Error("呼ばれません");
+      },
+    };
+    await expect(
+      runPredictionMasterWrite(bundle(), dataVersion, config, mock, true),
+    ).rejects.toThrow("送信前に失敗");
+    expect(batchCalls).toBe(1);
+    expect(readCalls).toBe(0);
+  });
+
+  it("batch送信後のtimeoutでは自動再送せず、再読込一致で適用済みと判定する", async () => {
+    const expected = serializePredictionMasters(bundle(), dataVersion);
+    let batchCalls = 0;
+    let readCalls = 0;
+    const mock: PredictionMasterWriteProvider = {
+      getMetadata: async () => createMetadata(),
+      batchUpdate: async () => {
+        batchCalls += 1;
+        throw new PredictionMasterBatchStateUnknownError();
+      },
+      readMasterSheets: async () => {
+        readCalls += 1;
+        return cloneSerialized(expected);
+      },
+    };
+    const result = await runPredictionMasterWrite(
+      bundle(),
+      dataVersion,
+      config,
+      mock,
+      true,
+    );
+    expect(result.status).toBe("confirmed-after-unknown");
+    expect(batchCalls).toBe(1);
+    expect(readCalls).toBe(1);
+  });
+
+  it("timeout後の再読込不一致は状態不明のまま終了する", async () => {
+    const actual = serializePredictionMasters(bundle(), dataVersion);
+    actual.models.values[1][0] = "不一致";
+    let batchCalls = 0;
+    const mock: PredictionMasterWriteProvider = {
+      getMetadata: async () => createMetadata(),
+      batchUpdate: async () => {
+        batchCalls += 1;
+        throw new PredictionMasterBatchStateUnknownError();
+      },
+      readMasterSheets: async () => actual,
+    };
+    await expect(
+      runPredictionMasterWrite(bundle(), dataVersion, config, mock, true),
+    ).rejects.toBeInstanceOf(PredictionMasterWriteStateUnknownError);
+    expect(batchCalls).toBe(1);
+  });
+
+  it("timeout後の再読込失敗は状態不明のまま終了する", async () => {
+    let batchCalls = 0;
+    let readCalls = 0;
+    const mock: PredictionMasterWriteProvider = {
+      getMetadata: async () => createMetadata(),
+      batchUpdate: async () => {
+        batchCalls += 1;
+        throw new PredictionMasterBatchStateUnknownError();
+      },
+      readMasterSheets: async () => {
+        readCalls += 1;
+        throw new Error("再読込通信失敗");
+      },
+    };
+    await expect(
+      runPredictionMasterWrite(bundle(), dataVersion, config, mock, true),
+    ).rejects.toBeInstanceOf(PredictionMasterWriteStateUnknownError);
+    expect(batchCalls).toBe(1);
+    expect(readCalls).toBe(1);
+  });
+
+  it("状態不明エラーに秘密情報やSpreadsheet ID全体を含めない", () => {
+    const message = new PredictionMasterWriteStateUnknownError().message;
+    expect(message).not.toContain("output-id");
+    expect(message).not.toContain("token");
+    expect(message).not.toContain("private");
   });
 });

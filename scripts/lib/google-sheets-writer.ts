@@ -3,6 +3,7 @@ import {
   predictionCoefficientSheetTitle,
   predictionMasterSpreadsheetTitle,
   predictionModelSheetTitle,
+  PredictionMasterBatchStateUnknownError,
   type MasterCellValue,
   type PredictionMasterBatchUpdate,
   type PredictionMasterSpreadsheetMetadata,
@@ -42,11 +43,12 @@ const sanitizedHttpError = (stage: string, status: number): Error =>
   new Error(`${stage}に失敗しました: HTTP ${status}`);
 
 const accessToken = async (fetchImpl: FetchImplementation): Promise<string> => {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(
-    /\\n/g,
-    "\n",
-  );
+  const email = process.env.PREDICTION_WRITER_SERVICE_ACCOUNT_EMAIL;
+  const privateKey =
+    process.env.PREDICTION_WRITER_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(
+      /\\n/g,
+      "\n",
+    );
   if (!email || !privateKey) {
     throw new Error("Google Sheets Writer認証が設定されていません。");
   }
@@ -222,17 +224,23 @@ export const createGoogleSheetsWriterProvider = (
       spreadsheetId: string,
       request: PredictionMasterBatchUpdate,
     ): Promise<void> {
-      const response = await fetchImpl(
-        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
-        {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${await token()}`,
-            "content-type": "application/json",
+      const writerToken = await token();
+      let response: Response;
+      try {
+        response = await fetchImpl(
+          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
+          {
+            method: "POST",
+            headers: {
+              authorization: `Bearer ${writerToken}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(request),
           },
-          body: JSON.stringify(request),
-        },
-      );
+        );
+      } catch {
+        throw new PredictionMasterBatchStateUnknownError();
+      }
       if (!response.ok) {
         throw sanitizedHttpError(
           "Prediction Master batch更新",

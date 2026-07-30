@@ -52,7 +52,7 @@ const main = async (): Promise<void> => {
     sourceSheetTitles,
   );
   const bundle = generatePredictionMasters(source, dataVersion, generatedAt);
-  const plan = await runPredictionMasterWrite(
+  const result = await runPredictionMasterWrite(
     bundle,
     dataVersion,
     config,
@@ -63,10 +63,14 @@ const main = async (): Promise<void> => {
     [
       `Writer target: ${maskedId(config.targetSpreadsheetId)}`,
       `モード: ${execute ? "execute" : "dry-run"}`,
-      `更新方式: ${plan.mode}`,
-      `モデル行数: ${plan.serialized.models.values.length - 1}`,
-      `係数行数: ${plan.serialized.coefficients.values.length - 1}`,
-      execute ? "書込み後再読込検証: 成功" : "書込み: なし",
+      `更新方式: ${result.mode}`,
+      `モデル行数: ${result.serialized.models.values.length - 1}`,
+      `係数行数: ${result.serialized.coefficients.values.length - 1}`,
+      result.status === "confirmed-after-unknown"
+        ? "適用状態: 適用済み・再確認成功"
+        : execute
+          ? "書込み後再読込検証: 成功"
+          : "書込み: なし",
     ].join("\n"),
   );
 };

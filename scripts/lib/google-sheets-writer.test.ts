@@ -10,8 +10,8 @@ import {
   googleSheetsWriterScope,
 } from "./google-sheets-writer";
 
-const originalEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const originalKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+const originalEmail = process.env.PREDICTION_WRITER_SERVICE_ACCOUNT_EMAIL;
+const originalKey = process.env.PREDICTION_WRITER_SERVICE_ACCOUNT_PRIVATE_KEY;
 const privateKey = generateKeyPairSync("rsa", {
   modulusLength: 2048,
   privateKeyEncoding: { type: "pkcs8", format: "pem" },
@@ -19,20 +19,21 @@ const privateKey = generateKeyPairSync("rsa", {
 }).privateKey;
 
 beforeEach(() => {
-  process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = "writer-test@example.invalid";
-  process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = privateKey;
+  process.env.PREDICTION_WRITER_SERVICE_ACCOUNT_EMAIL =
+    "writer-test@example.invalid";
+  process.env.PREDICTION_WRITER_SERVICE_ACCOUNT_PRIVATE_KEY = privateKey;
 });
 
 afterEach(() => {
   if (originalEmail === undefined) {
-    delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    delete process.env.PREDICTION_WRITER_SERVICE_ACCOUNT_EMAIL;
   } else {
-    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = originalEmail;
+    process.env.PREDICTION_WRITER_SERVICE_ACCOUNT_EMAIL = originalEmail;
   }
   if (originalKey === undefined) {
-    delete process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+    delete process.env.PREDICTION_WRITER_SERVICE_ACCOUNT_PRIVATE_KEY;
   } else {
-    process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = originalKey;
+    process.env.PREDICTION_WRITER_SERVICE_ACCOUNT_PRIVATE_KEY = originalKey;
   }
   vi.restoreAllMocks();
 });
@@ -118,5 +119,22 @@ describe("Google Sheets Writer Provider", () => {
     const provider = createGoogleSheetsWriterProvider(fetchMock);
     await provider.batchUpdate("output-id", emptyBatch);
     expect(methods).toEqual(["POST"]);
+  });
+  it("batch送信後の通信切断を適用状態不明エラーへ変換する", async () => {
+    let sheetsCalls = 0;
+    const fetchMock = vi.fn(
+      async (_input: URL | RequestInfo, init?: RequestInit) => {
+        if (init?.body instanceof URLSearchParams) return tokenResponse();
+        sheetsCalls += 1;
+        throw new TypeError("network timeout with sensitive transport detail");
+      },
+    ) as typeof fetch;
+    const provider = createGoogleSheetsWriterProvider(fetchMock);
+    await expect(
+      provider.batchUpdate("output-id", emptyBatch),
+    ).rejects.toMatchObject({
+      name: "PredictionMasterBatchStateUnknownError",
+    });
+    expect(sheetsCalls).toBe(1);
   });
 });
