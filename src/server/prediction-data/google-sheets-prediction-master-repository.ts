@@ -68,23 +68,31 @@ const accessToken = async (fetchImpl: FetchImplementation): Promise<string> => {
       "Prediction Master読取認証が設定されていません。",
     );
   }
-  const now = Math.floor(Date.now() / 1000);
-  const unsigned = [
-    base64url(JSON.stringify({ alg: "RS256", typ: "JWT" })),
-    base64url(
-      JSON.stringify({
-        iss: email,
-        scope: predictionMasterRepositoryScope,
-        aud: "https://oauth2.googleapis.com/token",
-        iat: now,
-        exp: now + 3600,
-      }),
-    ),
-  ].join(".");
-  const signer = createSign("RSA-SHA256");
-  signer.update(unsigned);
-  signer.end();
-  const assertion = `${unsigned}.${signer.sign(privateKey).toString("base64url")}`;
+  let assertion: string;
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const unsigned = [
+      base64url(JSON.stringify({ alg: "RS256", typ: "JWT" })),
+      base64url(
+        JSON.stringify({
+          iss: email,
+          scope: predictionMasterRepositoryScope,
+          aud: "https://oauth2.googleapis.com/token",
+          iat: now,
+          exp: now + 3600,
+        }),
+      ),
+    ].join(".");
+    const signer = createSign("RSA-SHA256");
+    signer.update(unsigned);
+    signer.end();
+    assertion = `${unsigned}.${signer.sign(privateKey).toString("base64url")}`;
+  } catch {
+    throw new PredictionMasterRepositoryError(
+      "AUTHENTICATION_FAILED",
+      "Prediction Master読取認証の署名準備に失敗しました。",
+    );
+  }
   let response: Response;
   try {
     response = await fetchImpl("https://oauth2.googleapis.com/token", {
@@ -107,8 +115,16 @@ const accessToken = async (fetchImpl: FetchImplementation): Promise<string> => {
       `Prediction Master読取認証に失敗しました: HTTP ${response.status}`,
     );
   }
-  const json = (await response.json()) as { access_token?: string };
-  if (!json.access_token) {
+  let json: { access_token?: unknown };
+  try {
+    json = (await response.json()) as { access_token?: unknown };
+  } catch {
+    throw new PredictionMasterRepositoryError(
+      "AUTHENTICATION_FAILED",
+      "Prediction Master読取認証応答の解析に失敗しました。",
+    );
+  }
+  if (typeof json.access_token !== "string" || json.access_token === "") {
     throw new PredictionMasterRepositoryError(
       "AUTHENTICATION_FAILED",
       "Prediction Master読取認証応答が不正です。",
@@ -177,7 +193,15 @@ export const createGoogleSheetsPredictionMasterRepository = (
         `Prediction Master取得に失敗しました: HTTP ${response.status}`,
       );
     }
-    const json = (await response.json()) as SpreadsheetResponse;
+    let json: SpreadsheetResponse;
+    try {
+      json = (await response.json()) as SpreadsheetResponse;
+    } catch {
+      throw new PredictionMasterRepositoryError(
+        "SPREADSHEET_FETCH_FAILED",
+        "Prediction Master Spreadsheet応答の解析に失敗しました。",
+      );
+    }
     if (json.spreadsheetId !== spreadsheetId) {
       throw new PredictionMasterRepositoryError(
         "TARGET_MISMATCH",

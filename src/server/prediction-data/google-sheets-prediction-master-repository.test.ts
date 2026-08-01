@@ -242,4 +242,93 @@ describe("Google Sheets Prediction Master Repository", () => {
       sheetsFailure.read({ spreadsheetId: "target-id", expectedDataVersion: version }),
     ).rejects.toMatchObject({ code: "SPREADSHEET_FETCH_FAILED" });
   });
+
+  it("不正な秘密鍵による署名失敗を認証エラーへ変換しサニタイズする", async () => {
+    const invalidKey = "not-a-private-key-secret";
+    const email = "sensitive-reader@example.invalid";
+    process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = invalidKey;
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = email;
+    const repository = createGoogleSheetsPredictionMasterRepository(
+      vi.fn() as typeof fetch,
+    );
+    let error: unknown;
+    try {
+      await repository.read({
+        spreadsheetId: "target-id",
+        expectedDataVersion: version,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toBeInstanceOf(PredictionMasterRepositoryError);
+    expect(error).toMatchObject({ code: "AUTHENTICATION_FAILED" });
+    expect((error as Error).message).not.toContain(invalidKey);
+    expect((error as Error).message).not.toContain(email);
+    expect((error as Error).message).not.toMatch(/DECODER|OpenSSL|unsupported/i);
+  });
+
+  it("token endpointの不正JSONを認証エラーへ変換し本文を隠す", async () => {
+    const responseBody = "sensitive-token-body target-id";
+    const repository = createGoogleSheetsPredictionMasterRepository(
+      vi.fn(async () => new Response(responseBody, { status: 200 })) as typeof fetch,
+    );
+    let error: unknown;
+    try {
+      await repository.read({
+        spreadsheetId: "target-id",
+        expectedDataVersion: version,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toMatchObject({ code: "AUTHENTICATION_FAILED" });
+    expect((error as Error).message).not.toContain(responseBody);
+    expect((error as Error).message).not.toContain("target-id");
+  });
+
+  it.each([
+    ["空JSON", {}],
+    ["空token", { access_token: "" }],
+    ["文字列以外のtoken", { access_token: 123 }],
+  ])("token endpointの%sを認証エラーにする", async (_name, body) => {
+    const repository = createGoogleSheetsPredictionMasterRepository(
+      vi.fn(async () =>
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      ) as typeof fetch,
+    );
+    await expect(
+      repository.read({
+        spreadsheetId: "target-id",
+        expectedDataVersion: version,
+      }),
+    ).rejects.toMatchObject({ code: "AUTHENTICATION_FAILED" });
+  });
+
+  it("Sheets成功応答の不正JSONを取得エラーへ変換し本文を隠す", async () => {
+    const responseBody = "mock-access-token target-id broken-json";
+    const fetchMock = vi.fn(
+      async (_input: URL | RequestInfo, init?: RequestInit) =>
+        init?.body instanceof URLSearchParams
+          ? tokenResponse()
+          : new Response(responseBody, { status: 200 }),
+    );
+    const repository = createGoogleSheetsPredictionMasterRepository(
+      fetchMock as typeof fetch,
+    );
+    let error: unknown;
+    try {
+      await repository.read({
+        spreadsheetId: "target-id",
+        expectedDataVersion: version,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toMatchObject({ code: "SPREADSHEET_FETCH_FAILED" });
+    expect((error as Error).message).not.toContain(responseBody);
+    expect((error as Error).message).not.toMatch(/mock-access-token|target-id/);
+  });
 });
