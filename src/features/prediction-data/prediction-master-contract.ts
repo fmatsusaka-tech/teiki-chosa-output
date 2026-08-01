@@ -5,6 +5,31 @@ import type {
   PredictionModelMaster,
 } from "./prediction-master.types";
 
+export const predictionModelSheetTitle = "予測モデルマスタ";
+export const predictionCoefficientSheetTitle = "予測係数マスタ";
+export const predictionMasterSpreadsheetTitle = "定期調査Output予測マスタ";
+
+export const predictionModelHeaders = [
+  "表示カテゴリー",
+  "予測モデル",
+  "収穫目標月日",
+  "有効",
+  "選抜基準",
+  "引用年次",
+  "データ版",
+  "生成日時",
+] as const;
+export const predictionCoefficientHeaders = [
+  "指標",
+  "予測モデル",
+  "月日",
+  "推移係数",
+  "原典シート",
+  "原典セル",
+  "データ版",
+  "生成日時",
+] as const;
+
 export const predictionModelOrder = [
   "ゆら早生",
   "興津早生",
