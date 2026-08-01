@@ -4,6 +4,7 @@ import {
   isIncludedInAnalysis,
   type AnalysisInclusionOptions,
 } from "../contracts/analysis-data";
+import { AnalysisDataError } from "./analysis-data-error";
 
 const analysisDataTabName = "調査データ";
 const requiredHeaders = Object.values(analysisDataHeaders);
@@ -19,15 +20,15 @@ export class AnalysisDataRepository {
     const rows = await this.source.readTab(analysisDataTabName);
 
     if (rows === null) {
-      throw new Error(`調査データタブが存在しません。`);
+      throw new AnalysisDataError("INVALID_RESPONSE", "調査データタブが存在しません。");
     }
 
     const [headers, ...dataRows] = rows;
     if (!headers) {
-      throw new Error("調査データタブに見出し行がありません。");
+      throw new AnalysisDataError("MISSING_HEADERS", "調査データタブに見出し行がありません。");
     }
     if (dataRows.length === 0) {
-      throw new Error("調査データタブにデータ行がありません。");
+      throw new AnalysisDataError("INVALID_RESPONSE", "調査データタブにデータ行がありません。");
     }
 
     const headerIndexes = this.resolveHeaderIndexes(headers);
@@ -50,7 +51,10 @@ export class AnalysisDataRepository {
 
     const missing = requiredHeaders.filter((header) => !indexes.has(header));
     if (missing.length > 0) {
-      throw new Error(`調査データタブに必須見出しがありません: ${missing.join("、")}`);
+      throw new AnalysisDataError(
+        "MISSING_HEADERS",
+        `調査データタブに必須見出しがありません: ${missing.join("、")}`,
+      );
     }
 
     return indexes;
@@ -65,8 +69,8 @@ export class AnalysisDataRepository {
 
     return {
       id: this.requiredString(value(analysisDataHeaders.id), analysisDataHeaders.id, rowNumber),
-      registeredAt: this.optionalDate(value(analysisDataHeaders.registeredAt), analysisDataHeaders.registeredAt, rowNumber),
-      measuredAt: this.optionalDate(value(analysisDataHeaders.measuredAt), analysisDataHeaders.measuredAt, rowNumber),
+      registeredAt: this.optionalRegisteredAt(value(analysisDataHeaders.registeredAt), analysisDataHeaders.registeredAt, rowNumber),
+      measuredAt: this.optionalMeasuredAt(value(analysisDataHeaders.measuredAt), rowNumber),
       fiscalYear: this.requiredNumber(value(analysisDataHeaders.fiscalYear), analysisDataHeaders.fiscalYear, rowNumber),
       year: this.requiredNumber(value(analysisDataHeaders.year), analysisDataHeaders.year, rowNumber),
       month: this.requiredNumber(value(analysisDataHeaders.month), analysisDataHeaders.month, rowNumber),
@@ -108,7 +112,7 @@ export class AnalysisDataRepository {
     return value.trim() || null;
   }
 
-  private optionalDate(value: unknown, header: string, rowNumber: number): string | null {
+  private optionalRegisteredAt(value: unknown, header: string, rowNumber: number): string | null {
     if (value === null || value === undefined || value === "") {
       return null;
     }
@@ -125,10 +129,97 @@ export class AnalysisDataRepository {
     throw new Error(`調査データ ${rowNumber}行目の「${header}」を日付へ変換できません。`);
   }
 
+  private optionalMeasuredAt(value: unknown, rowNumber: number): string | null {
+    if (value === null || value === undefined) return null;
+    if (typeof value === "string") {
+      if (!value.trim()) return null;
+
+      const gviz = /^Date\((\d{4}),(\d{1,2}),(\d{1,2})\)$/.exec(value);
+      if (gviz) {
+        return this.calendarDate(
+          Number(gviz[1]),
+          Number(gviz[2]) + 1,
+          Number(gviz[3]),
+          rowNumber,
+        );
+      }
+
+      const calendar = /^(\d{4})[-/](\d{2})[-/](\d{2})$/.exec(value);
+      if (calendar) {
+        return this.calendarDate(
+          Number(calendar[1]),
+          Number(calendar[2]),
+          Number(calendar[3]),
+          rowNumber,
+        );
+      }
+
+      const zoned = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+      if (zoned) {
+        this.calendarDate(Number(zoned[1]), Number(zoned[2]), Number(zoned[3]), rowNumber);
+        const hour = Number(zoned[4]);
+        const minute = Number(zoned[5]);
+        const second = Number(zoned[6] ?? "0");
+        const offset = zoned[8];
+        const offsetHour = offset === "Z" ? 0 : Number(offset.slice(1, 3));
+        const offsetMinute = offset === "Z" ? 0 : Number(offset.slice(4, 6));
+        if (
+          hour > 23 || minute > 59 || second > 59 ||
+          offsetHour > 14 || offsetMinute > 59 ||
+          (offsetHour === 14 && offsetMinute !== 0)
+        ) {
+          throw this.invalidMeasuredAt(rowNumber);
+        }
+        const instant = new Date(value);
+        if (Number.isNaN(instant.getTime())) throw this.invalidMeasuredAt(rowNumber);
+        const parts = new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Tokyo",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).formatToParts(instant);
+        const part = (type: Intl.DateTimeFormatPartTypes): string =>
+          parts.find((item) => item.type === type)?.value ?? "";
+        return `${part("year")}-${part("month")}-${part("day")}`;
+      }
+      throw this.invalidMeasuredAt(rowNumber);
+    }
+
+    if (typeof value === "number" && Number.isFinite(value) && Number.isInteger(value)) {
+      const date = new Date(Date.UTC(1899, 11, 30) + value * 86_400_000);
+      if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10);
+    }
+    throw this.invalidMeasuredAt(rowNumber);
+  }
+
+  private calendarDate(year: number, month: number, day: number, rowNumber: number): string {
+    const date = new Date(0);
+    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCFullYear(year, month - 1, day);
+    if (
+      date.getUTCFullYear() !== year ||
+      date.getUTCMonth() !== month - 1 ||
+      date.getUTCDate() !== day
+    ) {
+      throw this.invalidMeasuredAt(rowNumber);
+    }
+    return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
+  private invalidMeasuredAt(rowNumber: number): AnalysisDataError {
+    return new AnalysisDataError(
+      "INVALID_MEASURED_AT",
+      `調査データ ${rowNumber}行目の「計測日」を有効な暦日へ変換できません。`,
+    );
+  }
+
   private requiredNumber(value: unknown, header: string, rowNumber: number): number {
     const parsed = this.optionalNumber(value, header, rowNumber);
     if (parsed === null) {
-      throw new Error(`調査データ ${rowNumber}行目の「${header}」を数値へ変換できません。`);
+      throw new AnalysisDataError(
+        "INVALID_NUMBER",
+        `調査データ ${rowNumber}行目の「${header}」を数値へ変換できません。`,
+      );
     }
     return parsed;
   }
@@ -137,9 +228,13 @@ export class AnalysisDataRepository {
     if (value === null || value === undefined || value === "") {
       return null;
     }
+    if (typeof value === "string" && value.trim() === "") return null;
     const parsed = typeof value === "number" ? value : Number(value);
     if (!Number.isFinite(parsed)) {
-      throw new Error(`調査データ ${rowNumber}行目の「${header}」を数値へ変換できません。`);
+      throw new AnalysisDataError(
+        "INVALID_NUMBER",
+        `調査データ ${rowNumber}行目の「${header}」を数値へ変換できません。`,
+      );
     }
     return parsed;
   }

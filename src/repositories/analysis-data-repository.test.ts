@@ -78,6 +78,56 @@ describe("AnalysisDataRepository", () => {
     });
   });
 
+  it.each([
+    ["Date(2026,6,20)", "2026-07-20"],
+    ["Date(2024,1,29)", "2024-02-29"],
+    ["2026-07-20", "2026-07-20"],
+    ["2026/07/20", "2026-07-20"],
+    ["2026-07-20T16:00:00Z", "2026-07-21"],
+    ["2026-07-20T00:30:00+09:00", "2026-07-20"],
+    [25569, "1970-01-01"],
+  ])("normalizes measuredAt %s to a calendar date", async (measuredAt, expected) => {
+    const values = { ...recordValues, 計測日: measuredAt };
+    const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    expect(parsed.measuredAt).toBe(expected);
+  });
+
+  it.each([
+    "Date(2023,1,29)",
+    "Date(2026,12,1)",
+    "Date(2026,6,20) trailing",
+    " Date(2026,6,20)",
+    "2026-02-29",
+    "2026/13/01",
+    "2026-07-20T12:00:00",
+    "unknown",
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    25569.5,
+  ])("rejects invalid measuredAt %s without date rollover", async (measuredAt) => {
+    const values = { ...recordValues, 計測日: measuredAt };
+    const promise = new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    await expect(promise).rejects.toMatchObject({
+      name: "AnalysisDataError",
+      code: "INVALID_MEASURED_AT",
+    });
+  });
+
+  it.each([null, undefined, "", "　", "   "])("keeps missing measuredAt %s as null without fallback", async (measuredAt) => {
+    const values = {
+      ...recordValues,
+      計測日: measuredAt,
+      登録日時: "2026/07/20",
+      年: "2026",
+      月: "7",
+    };
+    const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    expect(parsed.measuredAt).toBeNull();
+  });
+
   it("is independent of column order", async () => {
     const reversedHeaders = [...headers].reverse();
     const records = await new AnalysisDataRepository(source(table(reversedHeaders))).getAll();
@@ -101,6 +151,31 @@ describe("AnalysisDataRepository", () => {
   it("rejects an invalid numeric value", async () => {
     const invalidValues = { ...recordValues, 横径平均: "invalid" };
     await expect(new AnalysisDataRepository(source(table(headers, invalidValues))).getAll()).rejects.toThrow("横径平均");
+  });
+
+  it.each(["", " ", "　", null, undefined])("keeps optional numeric missing value %s as null", async (averageDiameter) => {
+    const values = { ...recordValues, 横径平均: averageDiameter };
+    const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    expect(parsed.averageDiameter).toBeNull();
+  });
+
+  it.each([" ", "　", null, undefined, "not-number", Number.NaN, Number.POSITIVE_INFINITY])(
+    "rejects required numeric missing or invalid value %s",
+    async (year) => {
+      const values = { ...recordValues, 年: year };
+      await expect(new AnalysisDataRepository(source(table(headers, values))).getAll()).rejects.toMatchObject({
+        name: "AnalysisDataError",
+        code: "INVALID_NUMBER",
+      });
+    },
+  );
+
+  it("keeps valid number values and numeric strings", async () => {
+    const values = { ...recordValues, 年: 2026, 横径平均: "42.74" };
+    const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    expect(parsed).toMatchObject({ year: 2026, averageDiameter: 42.74 });
   });
 
   it("filters standard records with the shared inclusion rule", async () => {
