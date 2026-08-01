@@ -31,3 +31,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Build container image
+        run: docker build --tag teiki-chosa-output:test .
