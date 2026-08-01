@@ -100,6 +100,8 @@ describe("AnalysisDataRepository", () => {
     " Date(2026,6,20)",
     "2026-02-29",
     "2026/13/01",
+    "2026/07-20",
+    "2026-07/20",
     "2026-07-20T12:00:00",
     "unknown",
     Number.NaN,
@@ -170,6 +172,40 @@ describe("AnalysisDataRepository", () => {
       });
     },
   );
+
+  it.each([
+    true,
+    false,
+    [],
+    [42],
+    {},
+    () => 42,
+    BigInt(42),
+    Symbol("42"),
+  ])("rejects non-number optional numeric input without coercion", async (averageDiameter) => {
+    const values = { ...recordValues, 横径平均: averageDiameter };
+    await expect(new AnalysisDataRepository(source(table(headers, values))).getAll()).rejects.toMatchObject({
+      name: "AnalysisDataError",
+      code: "INVALID_NUMBER",
+    });
+  });
+
+  it.each([
+    true,
+    false,
+    [],
+    [2026],
+    {},
+    () => 2026,
+    BigInt(2026),
+    Symbol("2026"),
+  ])("rejects non-number required numeric input without coercion", async (year) => {
+    const values = { ...recordValues, 年: year };
+    await expect(new AnalysisDataRepository(source(table(headers, values))).getAll()).rejects.toMatchObject({
+      name: "AnalysisDataError",
+      code: "INVALID_NUMBER",
+    });
+  });
 
   it("keeps valid number values and numeric strings", async () => {
     const values = { ...recordValues, 年: 2026, 横径平均: "42.74" };

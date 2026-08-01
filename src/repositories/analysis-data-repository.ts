@@ -144,7 +144,8 @@ export class AnalysisDataRepository {
         );
       }
 
-      const calendar = /^(\d{4})[-/](\d{2})[-/](\d{2})$/.exec(value);
+      const calendar = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+        ?? /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(value);
       if (calendar) {
         return this.calendarDate(
           Number(calendar[1]),
@@ -227,6 +228,12 @@ export class AnalysisDataRepository {
   private optionalNumber(value: unknown, header: string, rowNumber: number): number | null {
     if (value === null || value === undefined || value === "") {
       return null;
+    }
+    if (typeof value !== "number" && typeof value !== "string") {
+      throw new AnalysisDataError(
+        "INVALID_NUMBER",
+        `調査データ ${rowNumber}行目の「${header}」を数値へ変換できません。`,
+      );
     }
     if (typeof value === "string" && value.trim() === "") return null;
     const parsed = typeof value === "number" ? value : Number(value);
