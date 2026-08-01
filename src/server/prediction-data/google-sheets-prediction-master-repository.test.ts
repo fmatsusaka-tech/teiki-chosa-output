@@ -331,4 +331,65 @@ describe("Google Sheets Prediction Master Repository", () => {
     expect((error as Error).message).not.toContain(responseBody);
     expect((error as Error).message).not.toMatch(/mock-access-token|target-id/);
   });
+
+  it.each([
+    ["null", null],
+    ["配列", [{ access_token: "array-token" }]],
+    ["プリミティブ", "primitive-token-response"],
+    ["空白token", { access_token: "   " }],
+  ])("token応答の%sを構造化認証エラーにする", async (_name, body) => {
+    const responseBody = JSON.stringify(body);
+    const repository = createGoogleSheetsPredictionMasterRepository(
+      vi.fn(async () =>
+        new Response(responseBody, {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      ) as typeof fetch,
+    );
+    let error: unknown;
+    try {
+      await repository.read({
+        spreadsheetId: "target-id",
+        expectedDataVersion: version,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toMatchObject({ code: "AUTHENTICATION_FAILED" });
+    expect((error as Error).message).not.toContain(responseBody);
+    expect((error as Error).message).not.toMatch(/target-id|@/);
+  });
+
+  it.each([
+    ["null", null],
+    ["配列", [spreadsheet()]],
+    ["プリミティブ", "primitive-sheets-response"],
+  ])("Sheets応答の%sを構造化取得エラーにする", async (_name, body) => {
+    const responseBody = JSON.stringify(body);
+    const fetchMock = vi.fn(
+      async (_input: URL | RequestInfo, init?: RequestInit) =>
+        init?.body instanceof URLSearchParams
+          ? tokenResponse()
+          : new Response(responseBody, {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }),
+    );
+    const repository = createGoogleSheetsPredictionMasterRepository(
+      fetchMock as typeof fetch,
+    );
+    let error: unknown;
+    try {
+      await repository.read({
+        spreadsheetId: "target-id",
+        expectedDataVersion: version,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toMatchObject({ code: "SPREADSHEET_FETCH_FAILED" });
+    expect((error as Error).message).not.toContain(responseBody);
+    expect((error as Error).message).not.toMatch(/mock-access-token|target-id/);
+  });
 });

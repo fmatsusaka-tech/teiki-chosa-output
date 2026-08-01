@@ -29,6 +29,9 @@ type SpreadsheetResponse = {
   }[];
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 export type PredictionMasterRepositoryErrorCode =
   | "AUTHENTICATION_FAILED"
   | "ACCESS_DENIED"
@@ -115,22 +118,26 @@ const accessToken = async (fetchImpl: FetchImplementation): Promise<string> => {
       `Prediction Master読取認証に失敗しました: HTTP ${response.status}`,
     );
   }
-  let json: { access_token?: unknown };
+  let parsed: unknown;
   try {
-    json = (await response.json()) as { access_token?: unknown };
+    parsed = await response.json();
   } catch {
     throw new PredictionMasterRepositoryError(
       "AUTHENTICATION_FAILED",
       "Prediction Master読取認証応答の解析に失敗しました。",
     );
   }
-  if (typeof json.access_token !== "string" || json.access_token === "") {
+  if (
+    !isRecord(parsed) ||
+    typeof parsed.access_token !== "string" ||
+    parsed.access_token.trim() === ""
+  ) {
     throw new PredictionMasterRepositoryError(
       "AUTHENTICATION_FAILED",
       "Prediction Master読取認証応答が不正です。",
     );
   }
-  return json.access_token;
+  return parsed.access_token;
 };
 
 const cellValue = (
@@ -193,15 +200,22 @@ export const createGoogleSheetsPredictionMasterRepository = (
         `Prediction Master取得に失敗しました: HTTP ${response.status}`,
       );
     }
-    let json: SpreadsheetResponse;
+    let parsed: unknown;
     try {
-      json = (await response.json()) as SpreadsheetResponse;
+      parsed = await response.json();
     } catch {
       throw new PredictionMasterRepositoryError(
         "SPREADSHEET_FETCH_FAILED",
         "Prediction Master Spreadsheet応答の解析に失敗しました。",
       );
     }
+    if (!isRecord(parsed)) {
+      throw new PredictionMasterRepositoryError(
+        "SPREADSHEET_FETCH_FAILED",
+        "Prediction Master Spreadsheet応答の形式が不正です。",
+      );
+    }
+    const json = parsed as SpreadsheetResponse;
     if (json.spreadsheetId !== spreadsheetId) {
       throw new PredictionMasterRepositoryError(
         "TARGET_MISMATCH",
