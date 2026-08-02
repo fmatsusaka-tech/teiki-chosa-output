@@ -1,13 +1,12 @@
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { AnalysisDataRepository } from "../../repositories/analysis-data-repository";
-import { GoogleSheetsAnalysisDataSource } from "../../repositories/google-sheets-analysis-data-source";
+import { createAuthenticatedAnalysisDataRepository } from "../../server/analysis-data/authenticated-analysis-data-repository";
 import { OrchardAnalysisClient } from "./orchard-analysis-client";
 
 export const dynamic = "force-dynamic";
 
 const getRecords = async (): Promise<{ records: AnalysisDataRecord[]; error: string | null }> => {
   try {
-    const repository = new AnalysisDataRepository(new GoogleSheetsAnalysisDataSource());
+    const repository = createAuthenticatedAnalysisDataRepository();
     return { records: await repository.getAll(), error: null };
   } catch (error) {
     console.error("Failed to load orchard analysis data", error);

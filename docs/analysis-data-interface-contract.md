@@ -97,14 +97,22 @@
 - `要確認` は明示的に指定した場合だけ分析対象とする。取消・削除・未知の状態は常に対象外とする。
 - `横径個数`、`横径平均`、`横径最小`、`横径最大`、`糖度`、`酸度`、`糖酸比` は数値として解釈できない場合、取込エラーとする。
 
-### 現行GViz取得境界
+### 現行の認証付き取得境界
+
+- `/analysis`と`/orchards`は、サーバー側の`GoogleSheetsApiAnalysisDataSource`からInput Spreadsheetの`調査データ`だけを取得する。
+- Reader用サービスアカウントと`spreadsheets.readonly`スコープだけを使用し、資格情報をブラウザーへ渡さない。
+- Spreadsheet ID、正式タイトル、シート名を照合し、Sheets APIではGET以外を使用しない。
+- 認証・取得・契約検証の失敗時に、公開GViz経路へ自動フォールバックしない。
+
+### 旧GViz取得境界
 
 - Outputは固定されたInput Spreadsheetとgidに対して、`調査データ`だけをGETで取得する。書込みHTTPメソッドを使用しない。
 - `readTab()`は実行時にも`調査データ`以外を拒否し、Repositoryは正式な必須見出しを検証する。
 - HTTP失敗、JSON解析失敗、応答構造不正は分類可能なサニタイズ済みエラーとして扱う。
 - エラーへSpreadsheet ID、gid、応答本文、登録ID、園地名、個別調査値、認証情報を含めない。
 - GViz応答からSpreadsheetタイトルやシートタイトルは取得できないため、タイトル一致を保証しない。固定されたSpreadsheet ID・gid、タブ引数、必須見出しによる多層防御を使用する。
-- 現行取得はInput Spreadsheetの公開・共有設定に依存する。公開範囲や認証方式の変更、認証付きSheets APIへの移行は別のセキュリティ・運用Issueで扱う。
+- GViz DataSourceは切替直後のロールバック候補として残すが、画面の通常取得経路からは呼び出さない。
+- 匿名Viewer解除とGViz実装の削除は、Cloud Run上の画面回帰完了後に独立Issueで扱う。
 
 ### 正本27列との関係
 
