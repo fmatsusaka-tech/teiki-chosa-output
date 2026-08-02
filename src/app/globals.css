@@ -79,6 +79,12 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .analysis-values { display: grid; flex: 1 0 auto; height: 100%; align-items: center; font-size: .82rem; font-variant-numeric: tabular-nums; }
 .analysis-values span { overflow: hidden; padding: 0 6px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .analysis-column-headings .analysis-values span { text-align: center; }
+.analysis-values .analysis-metric-diameter { background: #f1f7fb; }
+.analysis-values .analysis-metric-brix { background: #fff9e8; }
+.analysis-values .analysis-metric-acidity { background: #fff2f5; }
+.analysis-column-headings .analysis-values .analysis-metric-diameter { background: #e6f1f8; }
+.analysis-column-headings .analysis-values .analysis-metric-brix { background: #fff3d5; }
+.analysis-column-headings .analysis-values .analysis-metric-acidity { background: #fce7ec; }
 .analysis-values .analysis-positive { color: #17633a; font-weight: 800; }
 .analysis-values .analysis-negative { color: #a33a2b; font-weight: 800; }
 .analysis-values .analysis-neutral { color: #455249; font-weight: 800; }

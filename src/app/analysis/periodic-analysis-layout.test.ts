@@ -39,4 +39,13 @@ describe("periodic analysis table layout", () => {
     expect(component).toContain('className="home-link" href="/"');
     expect(component).toContain("← ホーム");
   });
+
+  it("uses separate subtle backgrounds for diameter, brix, and acidity columns", () => {
+    expect(component).toContain('tone: "diameter"');
+    expect(component).toContain('tone: "brix"');
+    expect(component).toContain('tone: "acidity"');
+    expect(stylesheet).toMatch(/\.analysis-values \.analysis-metric-diameter\s*\{[^}]*background:\s*#f1f7fb/);
+    expect(stylesheet).toMatch(/\.analysis-values \.analysis-metric-brix\s*\{[^}]*background:\s*#fff9e8/);
+    expect(stylesheet).toMatch(/\.analysis-values \.analysis-metric-acidity\s*\{[^}]*background:\s*#fff2f5/);
+  });
 });
