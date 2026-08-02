@@ -14,7 +14,8 @@
     "prediction:masters:summary": "npm run prediction:masters:build && node --env-file=.env.prediction.local .prediction-cli/scripts/generate-prediction-masters.js summary",
     "prediction:masters:dry-run": "npm run prediction:masters:build && node --env-file=.env.prediction.local .prediction-cli/scripts/generate-prediction-masters.js dry-run",
     "prediction:masters:write:dry-run": "npm run prediction:masters:build && node --env-file=.env.prediction.local .prediction-cli/scripts/write-prediction-masters.js dry-run",
-    "prediction:masters:write": "npm run prediction:masters:build && node --env-file=.env.prediction.local .prediction-cli/scripts/write-prediction-masters.js write"
+    "prediction:masters:write": "npm run prediction:masters:build && node --env-file=.env.prediction.local .prediction-cli/scripts/write-prediction-masters.js write",
+    "prediction:mvp:verify": "npm run prediction:masters:build && node --env-file=.env.prediction.local .prediction-cli/scripts/verify-prediction-mvp.js"
   },
   "dependencies": {
     "next": "^15.4.0",
