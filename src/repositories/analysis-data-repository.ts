@@ -81,9 +81,9 @@ export class AnalysisDataRepository {
       treatment: this.optionalString(value(analysisDataHeaders.treatment), analysisDataHeaders.treatment, rowNumber),
       notes: this.optionalString(value(analysisDataHeaders.notes), analysisDataHeaders.notes, rowNumber),
       diameterCount: this.optionalNumber(value(analysisDataHeaders.diameterCount), analysisDataHeaders.diameterCount, rowNumber),
-      averageDiameter: this.optionalNumber(value(analysisDataHeaders.averageDiameter), analysisDataHeaders.averageDiameter, rowNumber),
-      minimumDiameter: this.optionalNumber(value(analysisDataHeaders.minimumDiameter), analysisDataHeaders.minimumDiameter, rowNumber),
-      maximumDiameter: this.optionalNumber(value(analysisDataHeaders.maximumDiameter), analysisDataHeaders.maximumDiameter, rowNumber),
+      averageDiameter: this.optionalDiameter(value(analysisDataHeaders.averageDiameter), analysisDataHeaders.averageDiameter, rowNumber),
+      minimumDiameter: this.optionalDiameter(value(analysisDataHeaders.minimumDiameter), analysisDataHeaders.minimumDiameter, rowNumber),
+      maximumDiameter: this.optionalDiameter(value(analysisDataHeaders.maximumDiameter), analysisDataHeaders.maximumDiameter, rowNumber),
       brix: this.optionalNumber(value(analysisDataHeaders.brix), analysisDataHeaders.brix, rowNumber),
       acidity: this.optionalNumber(value(analysisDataHeaders.acidity), analysisDataHeaders.acidity, rowNumber),
       brixAcidityRatio: this.optionalNumber(value(analysisDataHeaders.brixAcidityRatio), analysisDataHeaders.brixAcidityRatio, rowNumber),
@@ -328,5 +328,14 @@ export class AnalysisDataRepository {
       );
     }
     return parsed;
+  }
+
+  private optionalDiameter(value: unknown, header: string, rowNumber: number): number | null {
+    const parsed = this.optionalNumber(value, header, rowNumber);
+    if (parsed === null) return null;
+
+    // Legacy Input rows sometimes store one-decimal diameters without the decimal point.
+    // Normalize only the three diameter measurement columns in the Output DTO.
+    return parsed >= 100 && parsed < 1000 ? parsed / 10 : parsed;
   }
 }
