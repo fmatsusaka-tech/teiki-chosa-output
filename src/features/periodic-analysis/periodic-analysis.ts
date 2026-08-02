@@ -67,6 +67,8 @@ const previousDifference = (current: PreparedRecord, candidates: readonly Prepar
       && candidate.record.orchard === current.record.orchard
       && candidate.record.variety === current.record.variety
       && candidate.record.treatment === current.record.treatment
+      && (candidate.record.surveyMonth !== current.record.surveyMonth
+        || candidate.record.surveyPeriod !== current.record.surveyPeriod)
       && candidate.measuredTimestamp < current.measuredTimestamp);
   if (priorCandidates.length === 0) {
     return empty();
