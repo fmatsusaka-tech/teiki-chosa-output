@@ -14,15 +14,15 @@ describe("buildOrchardComparison", () => {
   const selectionA = { orchard: "園地A", varietyCategory: "ゆら早生" };
   const selectionB = { orchard: "園地B", varietyCategory: "ゆら早生" };
 
-  it("日付を昇順に並べ、近い日付を統合せず欠測側をnullにする", () => {
+  it("日付を新しい順に並べ、近い日付を統合せず欠測側をnullにする", () => {
     const result = buildOrchardComparison([
       record({ id: "a-1", orchard: "園地A", measuredAt: "2026-07-01" }),
       record({ id: "b-1", orchard: "園地B", measuredAt: "2026-07-02" }),
     ], selectionA, selectionB);
 
     expect(result.columns).toMatchObject([
-      { measuredAt: "2026-07-01", orchardA: { registrationId: "a-1" }, orchardB: null },
       { measuredAt: "2026-07-02", orchardA: null, orchardB: { registrationId: "b-1" } },
+      { measuredAt: "2026-07-01", orchardA: { registrationId: "a-1" }, orchardB: null },
     ]);
   });
 
@@ -75,8 +75,8 @@ describe("buildOrchardAnalysis", () => {
     ];
 
     expect(getOrchardFilterOptions(records, "ゆら早生")).toEqual([
-      { orchard: "園地B", latestMeasuredAt: "2026-07-21", label: "園地B　最終計測 2026-07-21" },
-      { orchard: "園地A", latestMeasuredAt: "2026-07-20", label: "園地A　最終計測 2026-07-20" },
+      { orchard: "園地B", latestMeasuredAt: "2026-07-21", label: "園地B" },
+      { orchard: "園地A", latestMeasuredAt: "2026-07-20", label: "園地A" },
     ]);
     expect(getOrchardAnalysisFilterOptions(records, "園地A", "ゆら早生").treatments).toEqual(["A", "B"]);
   });

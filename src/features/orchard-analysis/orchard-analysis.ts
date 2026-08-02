@@ -107,7 +107,7 @@ export const getOrchardFilterOptions = (
   return [...latest.entries()].map(([orchard, latestMeasuredAt]) => ({
     orchard,
     latestMeasuredAt,
-    label: `${orchard}　最終計測 ${latestMeasuredAt ?? "—"}`,
+    label: orchard,
   })).sort((left, right) =>
     (right.latestMeasuredAt ?? "").localeCompare(left.latestMeasuredAt ?? "")
     || left.orchard.localeCompare(right.orchard, "ja"));
@@ -190,7 +190,8 @@ export const buildOrchardComparison = (
 ): OrchardComparison => {
   const a = comparisonRecords(records, orchardA);
   const b = comparisonRecords(records, orchardB);
-  const dates = [...new Set([...a.map((row) => row.measuredAt), ...b.map((row) => row.measuredAt)])].sort();
+  const dates = [...new Set([...a.map((row) => row.measuredAt), ...b.map((row) => row.measuredAt)])]
+    .sort((left, right) => right.localeCompare(left));
   let previousYear: string | null = null;
   const columns = dates.flatMap((measuredAt) => {
     const rowsA = a.filter((row) => row.measuredAt === measuredAt);
