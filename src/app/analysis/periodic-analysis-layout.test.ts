@@ -17,6 +17,19 @@ describe("periodic analysis table layout", () => {
     expect(stylesheet).toMatch(/\.analysis-identity\s*\{[^}]*position:\s*sticky[^}]*left:\s*0/);
   });
 
+  it("synchronizes horizontal scrolling across every expanded year", () => {
+    expect(component).toContain("const scrollContainers = useRef");
+    expect(component).toContain("target.scrollLeft = source.scrollLeft");
+    expect(component).toContain("onScroll={(event) => syncHorizontalScroll(event.currentTarget)}");
+  });
+
+  it("keeps sticky identity cells opaque while metric cells scroll underneath", () => {
+    expect(stylesheet).toMatch(/\.analysis-column-headings \.analysis-identity\s*\{[^}]*background:\s*#f8faf7/);
+    expect(stylesheet).toMatch(/\.analysis-row \.analysis-identity\s*\{[^}]*background:\s*#fff/);
+    expect(stylesheet).toMatch(/\.analysis-row:nth-child\(even\) \.analysis-identity\s*\{[^}]*background:\s*#fbfcfa/);
+    expect(stylesheet).toMatch(/\.analysis-row:hover \.analysis-identity\s*\{[^}]*background:\s*#f2f7f1/);
+  });
+
   it("keeps the column headings in normal table flow instead of pushing them over data rows", () => {
     expect(stylesheet).toMatch(/\.analysis-column-headings\s*\{[^}]*position:\s*relative/);
     expect(stylesheet).not.toMatch(/\.analysis-column-headings\s*\{[^}]*top:\s*140px/);
