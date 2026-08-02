@@ -2,6 +2,7 @@ import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { isIncludedInAnalysis } from "../../contracts/analysis-data";
 import { getVarietyCategory } from "../shared/variety-category";
 import type { PeriodicAnalysisQuery, PeriodicAnalysisRow, PeriodicAnalysisYearGroup, PreviousDifference } from "./periodic-analysis.types";
+import type { PredictionRecordResult } from "../prediction-integration/prediction-integration.types";
 
 type PreparedRecord = {
   record: AnalysisDataRecord;
@@ -50,30 +51,50 @@ const compareNewestFirst = (left: PreparedRecord, right: PreparedRecord): number
   || left.record.id.localeCompare(right.record.id);
 
 const previousDifference = (current: PreparedRecord, candidates: readonly PreparedRecord[]): PreviousDifference => {
-  if (!current.record.orchard) {
-    return { diameterAverage: null, brix: null, acidity: null };
+  const empty = (): PreviousDifference => ({
+    diameterAverage: null,
+    diameterMinimum: null,
+    diameterMaximum: null,
+    brix: null,
+    acidity: null,
+    brixAcidityRatio: null,
+  });
+  if (!current.record.orchard || !current.record.variety) {
+    return empty();
   }
-  const previous = candidates
-    .filter((candidate) => candidate.periodYear === current.periodYear
+  const priorCandidates = candidates
+    .filter((candidate) => candidate.record.year === current.record.year
       && candidate.record.orchard === current.record.orchard
-      && candidate.varietyCategory === current.varietyCategory
-      && candidate.record.treatment === current.record.treatment
-      && candidate.measuredTimestamp < current.measuredTimestamp)
-    .sort((left, right) => right.measuredTimestamp - left.measuredTimestamp
-      || right.registeredTimestamp - left.registeredTimestamp
-      || left.record.id.localeCompare(right.record.id))[0];
+      && candidate.record.variety === current.record.variety
+      && candidate.measuredTimestamp < current.measuredTimestamp);
+  if (priorCandidates.length === 0) {
+    return empty();
+  }
+  const previousTimestamp = Math.max(...priorCandidates.map((candidate) => candidate.measuredTimestamp));
+  const previousCandidates = priorCandidates.filter((candidate) => candidate.measuredTimestamp === previousTimestamp);
+  if (previousCandidates.length !== 1) {
+    return empty();
+  }
+  const previous = previousCandidates[0];
 
   const subtract = (currentValue: number | null, previousValue: number | null): number | null =>
     currentValue === null || previousValue === null ? null : currentValue - previousValue;
 
   return {
     diameterAverage: subtract(current.record.averageDiameter ?? null, previous?.record.averageDiameter ?? null),
+    diameterMinimum: subtract(current.record.minimumDiameter ?? null, previous?.record.minimumDiameter ?? null),
+    diameterMaximum: subtract(current.record.maximumDiameter ?? null, previous?.record.maximumDiameter ?? null),
     brix: subtract(current.record.brix, previous?.record.brix ?? null),
     acidity: subtract(current.record.acidity, previous?.record.acidity ?? null),
+    brixAcidityRatio: subtract(current.record.brixAcidityRatio, previous?.record.brixAcidityRatio ?? null),
   };
 };
 
-const toRow = (prepared: PreparedRecord, candidates: readonly PreparedRecord[]): PeriodicAnalysisRow => ({
+const toRow = (
+  prepared: PreparedRecord,
+  candidates: readonly PreparedRecord[],
+  predictionIndex: ReadonlyMap<string, PredictionRecordResult>,
+): PeriodicAnalysisRow => ({
   registrationId: prepared.record.id,
   periodYear: prepared.periodYear,
   measuredAt: prepared.record.measuredAt ?? "",
@@ -83,16 +104,22 @@ const toRow = (prepared: PreparedRecord, candidates: readonly PreparedRecord[]):
   treatment: prepared.record.treatment,
   notes: prepared.record.notes,
   diameterAverage: prepared.record.averageDiameter ?? null,
+  diameterMinimum: prepared.record.minimumDiameter ?? null,
+  diameterMaximum: prepared.record.maximumDiameter ?? null,
   brix: prepared.record.brix,
   acidity: prepared.record.acidity,
+  brixAcidityRatio: prepared.record.brixAcidityRatio,
   previousDifference: previousDifference(prepared, candidates),
+  prediction: predictionIndex.get(prepared.record.id) ?? null,
 });
 
 export const buildPeriodicAnalysis = (
   records: readonly AnalysisDataRecord[],
   query: PeriodicAnalysisQuery,
+  predictions: readonly PredictionRecordResult[] = [],
 ): PeriodicAnalysisYearGroup[] => {
   const prepared = prepareRecords(records, query.includeNeedsReview ?? false);
+  const predictionIndex = new Map(predictions.map((prediction) => [prediction.id, prediction] as const));
   const visible = prepared
     .filter((item) => item.varietyCategory === query.varietyCategory
       && item.periodMonth === query.month
@@ -104,7 +131,7 @@ export const buildPeriodicAnalysis = (
   const groups = new Map<number, PeriodicAnalysisRow[]>();
   for (const item of visible) {
     const rows = groups.get(item.periodYear) ?? [];
-    rows.push(toRow(item, prepared));
+    rows.push(toRow(item, prepared, predictionIndex));
     groups.set(item.periodYear, rows);
   }
 
