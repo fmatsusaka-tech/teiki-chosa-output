@@ -40,10 +40,6 @@ const columns: Record<ColumnKey, { label: string; width: number; tone?: MetricTo
   diameter: { label: "平均横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterAverage, 1) },
   diameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterAverage, 1).text, differenceValue: (record) => record.previousDifference.diameterAverage },
   diameterPrediction: { label: "収穫時予測", width: 96, tone: "diameter", value: (record) => displayPrediction(record.prediction?.metrics.横径, 1) },
-  minimumDiameter: { label: "最小横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterMinimum, 1) },
-  minimumDiameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterMinimum, 1).text, differenceValue: (record) => record.previousDifference.diameterMinimum },
-  maximumDiameter: { label: "最大横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterMaximum, 1) },
-  maximumDiameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterMaximum, 1).text, differenceValue: (record) => record.previousDifference.diameterMaximum },
   brix: { label: "糖度", width: 58, tone: "brix", value: (record) => displayNumber(record.brix, 1) },
   brixDifference: { label: "前回差", width: 58, tone: "brix", value: (record) => formatDifference(record.previousDifference.brix, 1).text, differenceValue: (record) => record.previousDifference.brix },
   brixPrediction: { label: "収穫時予測", width: 96, tone: "brix", value: (record) => displayPrediction(record.prediction?.metrics.糖度, 1) },
@@ -54,6 +50,10 @@ const columns: Record<ColumnKey, { label: string; width: number; tone?: MetricTo
   brixAcidityRatioDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.brixAcidityRatio, 1).text, differenceValue: (record) => record.previousDifference.brixAcidityRatio },
   rainfall30Days: { label: "30日降水量", width: 88, value: (record, context) => displayWeather(aggregateWeather30Days({ measuredAt: record.measuredAt, precipitationStationId: context.rainfallStation, temperatureStationId: "kawabe", records: context.weatherRecords }).precipitation, 1) },
   temperature30Days: { label: "30日平均気温", width: 96, value: (record, context) => displayWeather(aggregateWeather30Days({ measuredAt: record.measuredAt, precipitationStationId: context.rainfallStation, temperatureStationId: "kawabe", records: context.weatherRecords }).meanTemperature, 1) },
+  minimumDiameter: { label: "最小横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterMinimum, 1) },
+  minimumDiameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterMinimum, 1).text, differenceValue: (record) => record.previousDifference.diameterMinimum },
+  maximumDiameter: { label: "最大横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterMaximum, 1) },
+  maximumDiameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterMaximum, 1).text, differenceValue: (record) => record.previousDifference.diameterMaximum },
 };
 
 const initialColumns = Object.fromEntries(
