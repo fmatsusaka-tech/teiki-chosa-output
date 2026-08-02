@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const getRecords = async (): Promise<{ records: AnalysisDataRecord[]; error: string | null; orchardMasterWarning: string | null }> => {
   try {
     const repository = createAuthenticatedAnalysisDataRepository();
-    const normalized = await loadNormalizedAnalysisRecords(await repository.getAll());
+    const normalized = await loadNormalizedAnalysisRecords(await repository.getEnabledRecords());
     return { ...normalized, error: null };
   } catch (error) {
     console.error("Failed to load orchard analysis data", error);

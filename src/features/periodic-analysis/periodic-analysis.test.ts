@@ -9,7 +9,7 @@ const record = (overrides: Partial<AnalysisDataRecord> = {}): AnalysisDataRecord
   fiscalYear: 2026, year: 2026, month: 7, surveyMonth: "2026-08", surveyPeriod: "前半",
   orchard: "吉川", variety: "早生", treatment: null, notes: null, diameterCount: 5,
   averageDiameter: 50, minimumDiameter: 45, maximumDiameter: 55, brix: 10, acidity: 1,
-  brixAcidityRatio: 10, dataStatus: "正常", inputMethod: "text", enteredBy: null, source: null,
+  brixAcidityRatio: 10, dataStatus: "正常", activationStatus: null, inputMethod: "text", enteredBy: null, source: null,
   ...overrides,
 });
 

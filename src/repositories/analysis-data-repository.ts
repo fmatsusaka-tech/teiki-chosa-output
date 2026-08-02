@@ -1,6 +1,7 @@
 import {
   analysisDataHeaders,
   type AnalysisDataRecord,
+  isEnabledAnalysisRecord,
   isIncludedInAnalysis,
   type AnalysisInclusionOptions,
 } from "../contracts/analysis-data";
@@ -38,6 +39,11 @@ export class AnalysisDataRepository {
   async getStandardRecords(options?: AnalysisInclusionOptions): Promise<AnalysisDataRecord[]> {
     const records = await this.getAll();
     return records.filter((record) => isIncludedInAnalysis(record, options));
+  }
+
+  async getEnabledRecords(): Promise<AnalysisDataRecord[]> {
+    const records = await this.getAll();
+    return records.filter(isEnabledAnalysisRecord);
   }
 
   private resolveHeaderIndexes(headers: readonly unknown[]): Map<string, number> {
@@ -88,6 +94,7 @@ export class AnalysisDataRepository {
       acidity: this.optionalNumber(value(analysisDataHeaders.acidity), analysisDataHeaders.acidity, rowNumber),
       brixAcidityRatio: this.optionalNumber(value(analysisDataHeaders.brixAcidityRatio), analysisDataHeaders.brixAcidityRatio, rowNumber),
       dataStatus: this.requiredString(value(analysisDataHeaders.dataStatus), analysisDataHeaders.dataStatus, rowNumber),
+      activationStatus: this.optionalString(value(analysisDataHeaders.activationStatus), analysisDataHeaders.activationStatus, rowNumber),
       inputMethod: this.requiredString(value(analysisDataHeaders.inputMethod), analysisDataHeaders.inputMethod, rowNumber),
       enteredBy: this.optionalString(value(analysisDataHeaders.enteredBy), analysisDataHeaders.enteredBy, rowNumber),
       source: this.optionalString(value(analysisDataHeaders.source), analysisDataHeaders.source, rowNumber),

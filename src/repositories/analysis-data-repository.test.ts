@@ -24,6 +24,7 @@ const recordValues: Record<string, unknown> = {
   酸度: "1.25",
   糖酸比: "7.84",
   データ状態: "正常",
+  有効状態: "",
   入力方法: "text",
   入力者: "",
   送信元: "input",
@@ -337,5 +338,23 @@ describe("AnalysisDataRepository", () => {
     await expect(repository.getStandardRecords()).resolves.toHaveLength(1);
     await expect(repository.getStandardRecords({ includeNeedsReview: true })).resolves.toHaveLength(2);
     await expect(repository.getAll()).resolves.toHaveLength(2);
+  });
+
+  it("excludes only rows explicitly marked 無効 from enabled records", async () => {
+    const enabled: Record<string, unknown> = { ...recordValues, 登録ID: "enabled", 有効状態: "有効" };
+    const blank: Record<string, unknown> = { ...recordValues, 登録ID: "blank", 有効状態: "" };
+    const disabled: Record<string, unknown> = { ...recordValues, 登録ID: "disabled", 有効状態: " 無効 " };
+    const rows = [
+      headers,
+      ...[enabled, blank, disabled].map((values) => headers.map((header) => values[header])),
+    ];
+
+    const repository = new AnalysisDataRepository(source(rows));
+
+    await expect(repository.getEnabledRecords()).resolves.toEqual([
+      expect.objectContaining({ id: "enabled", activationStatus: "有効" }),
+      expect.objectContaining({ id: "blank", activationStatus: null }),
+    ]);
+    await expect(repository.getAll()).resolves.toHaveLength(3);
   });
 });

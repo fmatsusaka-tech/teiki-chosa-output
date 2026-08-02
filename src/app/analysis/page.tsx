@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 const getRecords = async () => {
   return loadPeriodicAnalysisPageData({
-    loadRecords: () => createAuthenticatedAnalysisDataRepository().getAll(),
+    loadRecords: () => createAuthenticatedAnalysisDataRepository().getEnabledRecords(),
     loadPredictionMaster: loadPredictionPageData,
   });
 };
