@@ -31,6 +31,12 @@ export type OrchardSelectionOption = {
   label: string;
 };
 
+export type OrchardFilterOption = {
+  orchard: string;
+  latestMeasuredAt: string | null;
+  label: string;
+};
+
 export type OrchardComparisonSelection = OrchardAnalysisQuery;
 
 export type OrchardComparisonMetric =

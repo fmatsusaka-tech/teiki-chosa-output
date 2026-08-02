@@ -1,7 +1,7 @@
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { isIncludedInAnalysis } from "../../contracts/analysis-data";
 import { getVarietyCategory } from "../shared/variety-category";
-import type { OrchardAnalysisFilterOptions, OrchardAnalysisQuery, OrchardAnalysisRow, OrchardAnalysisTimelineEntry, OrchardComparison, OrchardComparisonRecord, OrchardComparisonSelection, OrchardSelectionOption } from "./orchard-analysis.types";
+import type { OrchardAnalysisFilterOptions, OrchardAnalysisQuery, OrchardAnalysisRow, OrchardAnalysisTimelineEntry, OrchardComparison, OrchardComparisonRecord, OrchardComparisonSelection, OrchardFilterOption, OrchardSelectionOption } from "./orchard-analysis.types";
 
 type DatedRecord = {
   record: AnalysisDataRecord;
@@ -84,6 +84,33 @@ export const getOrchardSelectionOptions = (
     (right.latestMeasuredAt ?? "").localeCompare(left.latestMeasuredAt ?? "")
     || left.orchard.localeCompare(right.orchard, "ja")
     || (left.treatment ?? "").localeCompare(right.treatment ?? "", "ja"));
+};
+
+/** Returns one orchard option per orchard for a selected variety, newest first. */
+export const getOrchardFilterOptions = (
+  records: readonly AnalysisDataRecord[],
+  varietyCategory: string,
+): OrchardFilterOption[] => {
+  const latest = new Map<string, string | null>();
+  for (const record of records) {
+    if (
+      !isEligibleSelection(record)
+      || !record.orchard
+      || getVarietyCategory(record.variety) !== varietyCategory
+    ) continue;
+
+    const measuredAt = /^\d{4}-\d{2}-\d{2}$/.test(record.measuredAt ?? "") ? record.measuredAt : null;
+    const current = latest.get(record.orchard);
+    if (current === undefined || (measuredAt ?? "") > (current ?? "")) latest.set(record.orchard, measuredAt);
+  }
+
+  return [...latest.entries()].map(([orchard, latestMeasuredAt]) => ({
+    orchard,
+    latestMeasuredAt,
+    label: `${orchard}　最終計測 ${latestMeasuredAt ?? "—"}`,
+  })).sort((left, right) =>
+    (right.latestMeasuredAt ?? "").localeCompare(left.latestMeasuredAt ?? "")
+    || left.orchard.localeCompare(right.orchard, "ja"));
 };
 
 /**

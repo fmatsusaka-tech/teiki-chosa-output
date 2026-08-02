@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { buildOrchardAnalysis, getOrchardAnalysisFilterOptions, getOrchardSelectionOptions, orchardSelectionKey } from "../../features/orchard-analysis/orchard-analysis";
+import { buildOrchardAnalysis, getOrchardAnalysisFilterOptions, getOrchardFilterOptions } from "../../features/orchard-analysis/orchard-analysis";
 import type { OrchardAnalysisQuery, OrchardAnalysisRow } from "../../features/orchard-analysis/orchard-analysis.types";
 
 const displayNumber = (value: number | null, digits: number): string => value === null ? "—" : value.toFixed(digits);
@@ -19,33 +19,38 @@ const columns: Record<ResultColumnKey, Column> = {
 const initialColumns: Record<ColumnKey, boolean> = { diameter: true, brix: true, acidity: true, predictedDiameter: true, predictedBrix: true, predictedAcidity: true, rainfall30Days: true, averageTemperature30Days: true };
 
 export function OrchardAnalysisClient({ dataError, orchardMasterWarning, records }: { dataError: string | null; orchardMasterWarning: string | null; records: readonly AnalysisDataRecord[] }) {
-  const orchardOptions = useMemo(() => getOrchardSelectionOptions(records), [records]);
-  const initialOption = orchardOptions[0];
-  const initialOrchard = initialOption?.orchard ?? "";
-  const initialVarieties = useMemo(() => getOrchardAnalysisFilterOptions(records, initialOrchard, undefined, initialOption?.treatment ?? null).varietyCategories, [records, initialOrchard, initialOption?.treatment]);
-  const [query, setQuery] = useState<OrchardAnalysisQuery>({ orchard: initialOrchard, varietyCategory: initialVarieties[0] ?? "", treatment: initialOption?.treatment ?? null });
+  const varietyCategories = useMemo(() => getOrchardAnalysisFilterOptions(records).varietyCategories, [records]);
+  const initialVariety = varietyCategories[0] ?? "";
+  const initialOrchard = getOrchardFilterOptions(records, initialVariety)[0]?.orchard ?? "";
+  const initialTreatment = getOrchardAnalysisFilterOptions(records, initialOrchard, initialVariety).treatments[0] ?? null;
+  const [query, setQuery] = useState<OrchardAnalysisQuery>({ orchard: initialOrchard, varietyCategory: initialVariety, treatment: initialTreatment });
   const [visible, setVisible] = useState(initialColumns);
   const [showColumnPicker, setShowColumnPicker] = useState(false);
-  const varietyCategories = useMemo(() => getOrchardAnalysisFilterOptions(records, query.orchard, undefined, query.treatment ?? null).varietyCategories, [records, query.orchard, query.treatment]);
+  const orchardOptions = useMemo(() => getOrchardFilterOptions(records, query.varietyCategory), [records, query.varietyCategory]);
+  const treatments = useMemo(() => getOrchardAnalysisFilterOptions(records, query.orchard, query.varietyCategory).treatments, [records, query.orchard, query.varietyCategory]);
   const timeline = useMemo(() => buildOrchardAnalysis(records, query), [records, query]);
   const visibleColumns = (Object.keys(visible) as ColumnKey[]).filter((column) => visible[column]);
   const resultColumns: ResultColumnKey[] = visibleColumns;
   const recordCount = timeline.filter((entry) => entry.type === "record").length;
   const valuesTemplate = resultColumns.map((column) => `${columns[column].width}px`).join(" ");
   const tableWidth = 58 + resultColumns.reduce((width, column) => width + columns[column].width, 0);
-  const changeOrchard = (key: string) => {
-    const option = orchardOptions.find((candidate) => candidate.key === key);
-    if (!option) return;
-    const nextVarieties = getOrchardAnalysisFilterOptions(records, option.orchard, undefined, option.treatment).varietyCategories;
-    setQuery({ orchard: option.orchard, treatment: option.treatment, varietyCategory: nextVarieties[0] ?? "" });
+  const changeVarietyCategory = (varietyCategory: string) => {
+    const orchard = getOrchardFilterOptions(records, varietyCategory)[0]?.orchard ?? "";
+    const treatment = getOrchardAnalysisFilterOptions(records, orchard, varietyCategory).treatments[0] ?? null;
+    setQuery({ varietyCategory, orchard, treatment });
   };
-  const changeVarietyCategory = (varietyCategory: string) => setQuery({ ...query, varietyCategory });
+  const changeOrchard = (orchard: string) => {
+    const treatment = getOrchardAnalysisFilterOptions(records, orchard, query.varietyCategory).treatments[0] ?? null;
+    setQuery({ ...query, orchard, treatment });
+  };
+  const changeTreatment = (treatmentKey: string) => setQuery({ ...query, treatment: JSON.parse(treatmentKey) as string | null });
 
   return <main className="orchard-page">
     <header className="orchard-title"><p className="eyebrow">ORCHARDS</p><h1>園地分析</h1><p>1回の調査を1行として表示する時系列カルテです。</p><a className="orchard-compare-link" href="/orchards/compare">2園地を比較する →</a></header>
     <section className="orchard-filters" aria-label="園地分析の検索条件">
-      <label>園地・処理区<select value={orchardSelectionKey(query.orchard, query.treatment ?? null)} onChange={(event) => changeOrchard(event.target.value)}>{orchardOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
       <label>品種<select value={query.varietyCategory} onChange={(event) => changeVarietyCategory(event.target.value)}>{varietyCategories.map((variety) => <option key={variety} value={variety}>{variety}</option>)}</select></label>
+      <label>園地<select value={query.orchard} onChange={(event) => changeOrchard(event.target.value)}>{orchardOptions.map((option) => <option key={option.orchard} value={option.orchard}>{option.label}</option>)}</select></label>
+      <label>区<select value={JSON.stringify(query.treatment ?? null)} onChange={(event) => changeTreatment(event.target.value)}>{treatments.map((treatment) => <option key={JSON.stringify(treatment)} value={JSON.stringify(treatment)}>{treatment ?? "処理区なし"}</option>)}</select></label>
     </section>
     <section className="orchard-results" aria-label="園地分析の時系列一覧">
       {orchardMasterWarning && <p className="orchard-master-warning" role="status">{orchardMasterWarning}</p>}
