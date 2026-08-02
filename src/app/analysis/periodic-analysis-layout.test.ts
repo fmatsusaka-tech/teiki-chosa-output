@@ -48,4 +48,9 @@ describe("periodic analysis table layout", () => {
     expect(stylesheet).toMatch(/\.analysis-values \.analysis-metric-brix\s*\{[^}]*background:\s*#fff9e8/);
     expect(stylesheet).toMatch(/\.analysis-values \.analysis-metric-acidity\s*\{[^}]*background:\s*#fff2f5/);
   });
+
+  it("prioritizes the day in the narrow mobile date cell", () => {
+    expect(component).toContain('return match ? `${Number(match[2])}日` : "—"');
+    expect(component).toContain("<span title={record.measuredAt}>{displayDay(record.measuredAt)}</span>");
+  });
 });
