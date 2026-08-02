@@ -78,6 +78,8 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .analysis-column-headings .analysis-values span { text-align: center; }
 .analysis-values .analysis-positive { color: #17633a; font-weight: 800; }
 .analysis-values .analysis-negative { color: #a33a2b; font-weight: 800; }
+.analysis-values .analysis-neutral { color: #455249; font-weight: 800; }
+.analysis-prediction-error { margin: 0; border-bottom: 1px solid #e0c8a8; padding: 10px 12px; background: #fff8e9; color: #68491e; font-size: .8rem; line-height: 1.5; }
 .analysis-row:nth-child(even) { background: #fbfcfa; }
 .analysis-row:hover { background: #f2f7f1; }
 

@@ -4,16 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { buildPeriodicAnalysis } from "../../features/periodic-analysis/periodic-analysis";
 import type { PeriodicAnalysisQuery, PeriodicAnalysisRow } from "../../features/periodic-analysis/periodic-analysis.types";
+import { formatDifference } from "../../features/periodic-analysis/periodic-analysis-display";
 import { getVarietyCategory } from "../../features/periodic-analysis/variety-category";
 import type { PredictionMetricResult, PredictionRecordResult } from "../../features/prediction-integration/prediction-integration.types";
 
 const fallbackCategories = ["ゆら早生", "早生(宮川・興津 等、又は山下紅)", "田口", "中生(向山など)", "晩生", "丹生系"];
 
 const displayNumber = (value: number | null, digits: number): string => value === null ? "—" : value.toFixed(digits);
-const displayDifference = (value: number | null, digits: number): string => {
-  if (value === null) return "—";
-  return `${value > 0 ? "+" : ""}${value.toFixed(digits)}`;
-};
 const displayPrediction = (result: PredictionMetricResult | undefined, digits: number): string => {
   if (!result) return "—";
   return result.ok ? result.predictedValue.toFixed(digits) : `— ${result.message}`;
@@ -30,22 +27,22 @@ type ColumnKey = "diameter" | "diameterDifference" | "diameterPrediction"
   | "acidity" | "acidityDifference" | "acidityPrediction"
   | "brixAcidityRatio" | "brixAcidityRatioDifference";
 
-const columns: Record<ColumnKey, { label: string; width: number; value: (record: PeriodicAnalysisRow) => string }> = {
+const columns: Record<ColumnKey, { label: string; width: number; value: (record: PeriodicAnalysisRow) => string; differenceValue?: (record: PeriodicAnalysisRow) => number | null }> = {
   diameter: { label: "平均横径", width: 70, value: (record) => displayNumber(record.diameterAverage, 1) },
-  diameterDifference: { label: "前回差", width: 58, value: (record) => displayDifference(record.previousDifference.diameterAverage, 1) },
+  diameterDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.diameterAverage, 1).text, differenceValue: (record) => record.previousDifference.diameterAverage },
   diameterPrediction: { label: "収穫時予測", width: 150, value: (record) => displayPrediction(record.prediction?.metrics.横径, 1) },
   minimumDiameter: { label: "最小横径", width: 70, value: (record) => displayNumber(record.diameterMinimum, 1) },
-  minimumDiameterDifference: { label: "前回差", width: 58, value: (record) => displayDifference(record.previousDifference.diameterMinimum, 1) },
+  minimumDiameterDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.diameterMinimum, 1).text, differenceValue: (record) => record.previousDifference.diameterMinimum },
   maximumDiameter: { label: "最大横径", width: 70, value: (record) => displayNumber(record.diameterMaximum, 1) },
-  maximumDiameterDifference: { label: "前回差", width: 58, value: (record) => displayDifference(record.previousDifference.diameterMaximum, 1) },
+  maximumDiameterDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.diameterMaximum, 1).text, differenceValue: (record) => record.previousDifference.diameterMaximum },
   brix: { label: "糖度", width: 58, value: (record) => displayNumber(record.brix, 1) },
-  brixDifference: { label: "前回差", width: 58, value: (record) => displayDifference(record.previousDifference.brix, 1) },
+  brixDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.brix, 1).text, differenceValue: (record) => record.previousDifference.brix },
   brixPrediction: { label: "収穫時予測", width: 150, value: (record) => displayPrediction(record.prediction?.metrics.糖度, 1) },
   acidity: { label: "クエン酸", width: 68, value: (record) => displayNumber(record.acidity, 2) },
-  acidityDifference: { label: "前回差", width: 58, value: (record) => displayDifference(record.previousDifference.acidity, 2) },
+  acidityDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.acidity, 2).text, differenceValue: (record) => record.previousDifference.acidity },
   acidityPrediction: { label: "収穫時予測", width: 150, value: (record) => displayPrediction(record.prediction?.metrics.クエン酸, 2) },
   brixAcidityRatio: { label: "糖酸比", width: 62, value: (record) => displayNumber(record.brixAcidityRatio, 1) },
-  brixAcidityRatioDifference: { label: "前回差", width: 58, value: (record) => displayDifference(record.previousDifference.brixAcidityRatio, 1) },
+  brixAcidityRatioDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.brixAcidityRatio, 1).text, differenceValue: (record) => record.previousDifference.brixAcidityRatio },
 };
 
 const initialColumns = Object.fromEntries(
@@ -61,16 +58,19 @@ const AnalysisRow = ({ record, visibleColumns }: { record: PeriodicAnalysisRow; 
       <div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>
         {visibleColumns.map((column) => {
           const value = columns[column].value(record);
-          const difference = column.endsWith("Difference");
-          return <span className={difference && value !== "—" ? (value.startsWith("+") ? "analysis-positive" : "analysis-negative") : undefined} key={column} title={value}>{value}</span>;
+          const differenceValue = columns[column].differenceValue?.(record);
+          const differenceTone = differenceValue === undefined ? null : formatDifference(differenceValue, 0).tone;
+          const className = differenceTone === "positive" ? "analysis-positive" : differenceTone === "negative" ? "analysis-negative" : differenceTone === "neutral" ? "analysis-neutral" : undefined;
+          return <span className={className} key={column} title={value}>{value}</span>;
         })}
       </div>
     </div>
   </div>
 );
 
-export function PeriodicAnalysisClient({ dataError, predictions, records }: {
+export function PeriodicAnalysisClient({ dataError, predictionError, predictions, records }: {
   dataError: string | null;
+  predictionError: string | null;
   predictions: readonly PredictionRecordResult[];
   records: readonly AnalysisDataRecord[];
 }) {
@@ -100,6 +100,7 @@ export function PeriodicAnalysisClient({ dataError, predictions, records }: {
       <fieldset><legend>区分</legend><label><input checked={query.half === "前半"} name="half" type="radio" value="前半" onChange={() => setQuery({ ...query, half: "前半" })} />前半</label><label><input checked={query.half === "後半"} name="half" type="radio" value="後半" onChange={() => setQuery({ ...query, half: "後半" })} />後半</label></fieldset>
     </section>
     <section className="analysis-results" aria-label="定期調査一覧">
+      {predictionError && <p className="analysis-prediction-error" role="status">{predictionError}</p>}
       <div className="analysis-result-summary"><span>検索結果</span><strong>{total}件</strong>{groups.length > 0 && <small>（{groups[0].year}〜{groups[groups.length - 1].year}年）</small>}<button type="button" onClick={() => setShowColumnPicker(!showColumnPicker)}>表示項目</button></div>
       {showColumnPicker && <div className="analysis-column-picker" aria-label="表示項目">
         {(Object.keys(columns) as ColumnKey[]).map((column) => <label key={column}><input checked={visible[column]} type="checkbox" onChange={() => setVisible({ ...visible, [column]: !visible[column] })} />{columns[column].label}</label>)}
