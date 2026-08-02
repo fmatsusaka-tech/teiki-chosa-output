@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { buildPeriodicAnalysis } from "../../features/periodic-analysis/periodic-analysis";
 import type { PeriodicAnalysisQuery, PeriodicAnalysisRow } from "../../features/periodic-analysis/periodic-analysis.types";
@@ -102,12 +102,22 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
   const [visible, setVisible] = useState(initialColumns);
   const [showColumnPicker, setShowColumnPicker] = useState(false);
   const [rainfallStation, setRainfallStation] = useState<RainfallStation>("yuasa");
+  const scrollContainers = useRef<(HTMLDivElement | null)[]>([]);
   const visibleColumns = (Object.keys(visible) as ColumnKey[]).filter((column) => visible[column]);
   const columnContext = useMemo<ColumnContext>(() => ({ rainfallStation, weatherRecords }), [rainfallStation, weatherRecords]);
   const tableWidth = 140 + visibleColumns.reduce((width, column) => width + columns[column].width, 0);
   const total = groups.reduce((count, group) => count + group.rows.length, 0);
 
   useEffect(() => setExpandedYears(new Set(groups.map((group) => group.year))), [groups]);
+  useEffect(() => { scrollContainers.current.length = groups.length; }, [groups.length]);
+
+  const syncHorizontalScroll = (source: HTMLDivElement) => {
+    for (const target of scrollContainers.current) {
+      if (target && target !== source && target.scrollLeft !== source.scrollLeft) {
+        target.scrollLeft = source.scrollLeft;
+      }
+    }
+  };
 
   return <main className="analysis-page">
     <header className="analysis-title"><Link className="home-link" href="/">← ホーム</Link><p className="eyebrow">ANALYSIS</p><h1>定期調査分析</h1></header>
@@ -125,13 +135,18 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
       {showColumnPicker && <div className="analysis-column-picker" aria-label="表示項目">
         {(Object.keys(columns) as ColumnKey[]).map((column) => <label key={column}><input checked={visible[column]} type="checkbox" onChange={() => setVisible({ ...visible, [column]: !visible[column] })} />{columns[column].label}</label>)}
       </div>}
-      {dataError ? <p className="analysis-empty">{dataError}</p> : groups.length === 0 ? <p className="analysis-empty">条件に一致する調査データはありません。</p> : groups.map((group) => {
+      {dataError ? <p className="analysis-empty">{dataError}</p> : groups.length === 0 ? <p className="analysis-empty">条件に一致する調査データはありません。</p> : groups.map((group, groupIndex) => {
         const expanded = expandedYears.has(group.year);
         return <section className="analysis-year" key={group.year}>
           <button className="analysis-year-heading" type="button" onClick={() => setExpandedYears((years) => { const next = new Set(years); if (expanded) next.delete(group.year); else next.add(group.year); return next; })}>
             <span aria-hidden="true">{expanded ? "▼" : "▶"}</span> {group.year}年（{group.rows.length}件）
           </button>
-          {expanded && <div className="analysis-table-scroll" aria-label={`${group.year}年の調査結果。表を横にスクロールできます。`}>
+          {expanded && <div
+            className="analysis-table-scroll"
+            aria-label={`${group.year}年の調査結果。表を横にスクロールできます。`}
+            ref={(element) => { scrollContainers.current[groupIndex] = element; }}
+            onScroll={(event) => syncHorizontalScroll(event.currentTarget)}
+          >
             <div className="analysis-table" style={{ minWidth: `${tableWidth}px` }}>
               <div className="analysis-column-headings"><div className="analysis-identity"><span>日付</span><span>園地</span></div><div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>{visibleColumns.map((column) => <span className={columns[column].tone ? `analysis-metric-${columns[column].tone}` : undefined} key={column}>{columns[column].label}</span>)}</div></div>
               {group.rows.map((record) => <AnalysisRow context={columnContext} key={record.registrationId} record={record} visibleColumns={visibleColumns} />)}
