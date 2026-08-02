@@ -20,6 +20,7 @@ export const analysisDataHeaders = {
   acidity: "酸度",
   brixAcidityRatio: "糖酸比",
   dataStatus: "データ状態",
+  activationStatus: "有効状態",
   inputMethod: "入力方法",
   enteredBy: "入力者",
   source: "送信元",
@@ -50,12 +51,18 @@ export interface AnalysisDataRecord {
   acidity: number | null;
   brixAcidityRatio: number | null;
   dataStatus: string;
+  activationStatus: string | null;
   inputMethod: string;
   enteredBy: string | null;
   source: string | null;
 }
 
 export type AnalysisInclusionOptions = { includeNeedsReview?: boolean };
+
+/** `無効`と明示された行だけを除外し、空欄と`有効`は従来どおり採用する。 */
+export const isEnabledAnalysisRecord = (
+  record: Pick<AnalysisDataRecord, "activationStatus">,
+): boolean => record.activationStatus !== "無効";
 
 const standardAnalysisStatuses = new Set(["正常", "横径なし", "糖度なし", "酸度なし"]);
 

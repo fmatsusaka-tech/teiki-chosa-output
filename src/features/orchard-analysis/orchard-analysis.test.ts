@@ -6,7 +6,7 @@ const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => (
   id: "id-1", registeredAt: null, measuredAt: "2026-07-01", fiscalYear: 2026, year: 2026, month: 7,
   surveyMonth: "2026-07", surveyPeriod: "前半", orchard: "吉川", variety: "ゆら早生", treatment: null,
   notes: null, diameterCount: null, averageDiameter: 42.1, minimumDiameter: null, maximumDiameter: null,
-  brix: 9.3, acidity: 1.4, brixAcidityRatio: null, dataStatus: "正常", inputMethod: "", enteredBy: null, source: null,
+  brix: 9.3, acidity: 1.4, brixAcidityRatio: null, dataStatus: "正常", activationStatus: null, inputMethod: "", enteredBy: null, source: null,
   ...overrides,
 });
 

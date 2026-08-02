@@ -80,6 +80,7 @@ const record = (overrides: Partial<AnalysisDataRecord> = {}): AnalysisDataRecord
   acidity: 1,
   brixAcidityRatio: 8,
   dataStatus: "正常",
+  activationStatus: null,
   inputMethod: "検証",
   enteredBy: null,
   source: null,
