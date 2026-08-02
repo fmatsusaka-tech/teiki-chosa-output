@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { buildPeriodicAnalysis } from "./periodic-analysis";
 import { getPredictionModel, getVarietyCategory } from "./variety-category";
+import type { PredictionRecordResult } from "../prediction-integration/prediction-integration.types";
 
 const record = (overrides: Partial<AnalysisDataRecord> = {}): AnalysisDataRecord => ({
   id: "id-1", registeredAt: "2026-07-28T10:00:00Z", measuredAt: "2026-07-28",
@@ -66,11 +67,18 @@ describe("buildPeriodicAnalysis", () => {
 
   it("calculates previous differences from all matching records in the same period year", () => {
     const records = [
-      record({ id: "current", measuredAt: "2026-08-15", surveyMonth: "2026-08", averageDiameter: 52, brix: 11, acidity: 0.9 }),
-      record({ id: "previous", measuredAt: "2026-07-20", surveyMonth: "2026-07", surveyPeriod: "後半", averageDiameter: 50, brix: 10, acidity: 1 }),
+      record({ id: "current", measuredAt: "2026-08-15", surveyMonth: "2026-08", averageDiameter: 52, minimumDiameter: 47, maximumDiameter: 57, brix: 11, acidity: 0.9, brixAcidityRatio: 12 }),
+      record({ id: "previous", measuredAt: "2026-07-20", surveyMonth: "2026-07", surveyPeriod: "後半", averageDiameter: 50, minimumDiameter: 45, maximumDiameter: 55, brix: 10, acidity: 1, brixAcidityRatio: 10 }),
     ];
     const row = buildPeriodicAnalysis(records, query)[0].rows[0];
-    expect(row.previousDifference).toEqual({ diameterAverage: 2, brix: 1, acidity: -0.09999999999999998 });
+    expect(row.previousDifference).toEqual({
+      diameterAverage: 2,
+      diameterMinimum: 2,
+      diameterMaximum: 2,
+      brix: 1,
+      acidity: -0.09999999999999998,
+      brixAcidityRatio: 2,
+    });
   });
 
   it("does not use same-day records or skip missing previous values", () => {
@@ -94,6 +102,56 @@ describe("buildPeriodicAnalysis", () => {
   it("keeps a missing orchard visible but does not calculate its previous difference", () => {
     const [row] = buildPeriodicAnalysis([record({ orchard: null, averageDiameter: null })], query)[0].rows;
     expect(row).toMatchObject({ orchard: null, diameterAverage: null });
-    expect(row.previousDifference).toEqual({ diameterAverage: null, brix: null, acidity: null });
+    expect(row.previousDifference).toEqual({
+      diameterAverage: null,
+      diameterMinimum: null,
+      diameterMaximum: null,
+      brix: null,
+      acidity: null,
+      brixAcidityRatio: null,
+    });
+  });
+
+  it("uses the exact orchard and variety across treatments", () => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-15", treatment: "処理A", averageDiameter: 52 }),
+      record({ id: "previous", measuredAt: "2026-08-01", treatment: "処理B", averageDiameter: 50 }),
+      record({ id: "other-variety", measuredAt: "2026-08-10", variety: "山下紅", averageDiameter: 10 }),
+    ];
+    expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBe(2);
+  });
+
+  it("returns missing differences when the immediately previous day has multiple records", () => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-15", averageDiameter: 52 }),
+      record({ id: "previous-a", measuredAt: "2026-08-10", averageDiameter: 50 }),
+      record({ id: "previous-b", measuredAt: "2026-08-10", averageDiameter: 49 }),
+      record({ id: "older", measuredAt: "2026-08-01", averageDiameter: 45 }),
+    ];
+    expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBeNull();
+  });
+
+  it("attaches the matching structured prediction without changing the input", () => {
+    const input = record();
+    const prediction: PredictionRecordResult = {
+      id: input.id,
+      fiscalYear: input.fiscalYear,
+      measuredYear: input.year,
+      orchard: input.orchard,
+      variety: input.variety,
+      treatment: input.treatment,
+      measuredAt: input.measuredAt,
+      predictionModel: "興津早生",
+      targetMonthDay: "11-20",
+      dataVersion: "1.0.1",
+      metrics: {
+        横径: { ok: false, metric: "横径", reason: "MEASURED_COEFFICIENT_NOT_FOUND", message: "係数なし" },
+        糖度: { ok: false, metric: "糖度", reason: "INVALID_MEASURED_VALUE", message: "実測値なし" },
+        クエン酸: { ok: false, metric: "クエン酸", reason: "TARGET_DATE_EXCEEDED", message: "目標日超過" },
+      },
+    };
+    const snapshot = structuredClone(input);
+    expect(buildPeriodicAnalysis([input], query, [prediction])[0].rows[0].prediction).toEqual(prediction);
+    expect(input).toEqual(snapshot);
   });
 });
