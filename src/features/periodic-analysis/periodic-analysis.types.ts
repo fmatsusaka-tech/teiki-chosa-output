@@ -25,6 +25,7 @@ export type PeriodicAnalysisRow = {
   periodYear: number;
   measuredAt: string;
   orchard: string | null;
+  originalOrchard: string | null;
   rawVariety: string;
   varietyCategory: string;
   treatment: string | null;

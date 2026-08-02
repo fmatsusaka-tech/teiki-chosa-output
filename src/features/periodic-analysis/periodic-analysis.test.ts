@@ -81,6 +81,14 @@ describe("buildPeriodicAnalysis", () => {
     });
   });
 
+  it("does not mix a different treatment after orchard normalization", () => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-15", orchard: "12号", treatment: "無処理", averageDiameter: 52 }),
+      record({ id: "other-treatment", measuredAt: "2026-08-14", orchard: "12号", treatment: "フィ", averageDiameter: 50 }),
+    ];
+    expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBeNull();
+  });
+
   it("does not use same-day records or skip missing previous values", () => {
     const records = [
       record({ id: "current", measuredAt: "2026-08-15", averageDiameter: 52 }),
@@ -112,13 +120,13 @@ describe("buildPeriodicAnalysis", () => {
     });
   });
 
-  it("uses the exact orchard and variety across treatments", () => {
+  it("keeps the exact orchard, variety, and treatment separate", () => {
     const records = [
       record({ id: "current", measuredAt: "2026-08-15", treatment: "処理A", averageDiameter: 52 }),
       record({ id: "previous", measuredAt: "2026-08-01", treatment: "処理B", averageDiameter: 50 }),
       record({ id: "other-variety", measuredAt: "2026-08-10", variety: "山下紅", averageDiameter: 10 }),
     ];
-    expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBe(2);
+    expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBeNull();
   });
 
   it("returns missing differences when the immediately previous day has multiple records", () => {

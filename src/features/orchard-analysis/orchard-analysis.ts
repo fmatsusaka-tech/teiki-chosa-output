@@ -1,7 +1,7 @@
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { isIncludedInAnalysis } from "../../contracts/analysis-data";
 import { getVarietyCategory } from "../shared/variety-category";
-import type { OrchardAnalysisFilterOptions, OrchardAnalysisQuery, OrchardAnalysisRow, OrchardAnalysisTimelineEntry, OrchardComparison, OrchardComparisonRecord, OrchardComparisonSelection } from "./orchard-analysis.types";
+import type { OrchardAnalysisFilterOptions, OrchardAnalysisQuery, OrchardAnalysisRow, OrchardAnalysisTimelineEntry, OrchardComparison, OrchardComparisonRecord, OrchardComparisonSelection, OrchardSelectionOption } from "./orchard-analysis.types";
 
 type DatedRecord = {
   record: AnalysisDataRecord;
@@ -35,21 +35,55 @@ const isEligible = (record: AnalysisDataRecord): boolean =>
   && getVarietyCategory(record.variety) !== null
   && isIncludedInAnalysis(record);
 
+const isEligibleSelection = (record: AnalysisDataRecord): boolean =>
+  record.orchard !== null
+  && getVarietyCategory(record.variety) !== null
+  && isIncludedInAnalysis(record);
+
 /** Returns cascading search candidates from records that can appear in analysis. */
 export const getOrchardAnalysisFilterOptions = (
   records: readonly AnalysisDataRecord[],
   orchard?: string,
   varietyCategory?: string,
+  treatment?: string | null,
 ): OrchardAnalysisFilterOptions => {
   const eligible = records.filter((record) => isEligible(record)
     && (orchard === undefined || record.orchard === orchard)
-    && (varietyCategory === undefined || getVarietyCategory(record.variety) === varietyCategory));
+    && (varietyCategory === undefined || getVarietyCategory(record.variety) === varietyCategory)
+    && (treatment === undefined || record.treatment === treatment));
 
   return {
     orchards: [...new Set(eligible.map((record) => record.orchard!))].sort((a, b) => a.localeCompare(b, "ja")),
     varietyCategories: [...new Set(eligible.map((record) => getVarietyCategory(record.variety)!))].sort((a, b) => a.localeCompare(b, "ja")),
     treatments: [...new Set(eligible.map((record) => record.treatment))],
   };
+};
+
+export const orchardSelectionKey = (orchard: string, treatment: string | null): string => JSON.stringify([orchard, treatment]);
+
+export const getOrchardSelectionOptions = (
+  records: readonly AnalysisDataRecord[],
+  year?: number,
+): OrchardSelectionOption[] => {
+  const latest = new Map<string, { orchard: string; treatment: string | null; measuredAt: string | null }>();
+  for (const record of records) {
+    if (!isEligibleSelection(record) || !record.orchard) continue;
+    const measuredAt = /^\d{4}-\d{2}-\d{2}$/.test(record.measuredAt ?? "") ? record.measuredAt : null;
+    if (year !== undefined && measuredAt?.slice(0, 4) !== String(year)) continue;
+    const key = orchardSelectionKey(record.orchard, record.treatment);
+    const current = latest.get(key);
+    if (!current || (measuredAt ?? "") > (current.measuredAt ?? "")) latest.set(key, { orchard: record.orchard, treatment: record.treatment, measuredAt });
+  }
+  return [...latest.entries()].map(([key, value]) => ({
+    key,
+    orchard: value.orchard,
+    treatment: value.treatment,
+    latestMeasuredAt: value.measuredAt,
+    label: `${value.orchard}／${value.treatment ?? "処理区なし"}　最終計測 ${value.measuredAt ?? "—"}`,
+  })).sort((left, right) =>
+    (right.latestMeasuredAt ?? "").localeCompare(left.latestMeasuredAt ?? "")
+    || left.orchard.localeCompare(right.orchard, "ja")
+    || (left.treatment ?? "").localeCompare(right.treatment ?? "", "ja"));
 };
 
 /**

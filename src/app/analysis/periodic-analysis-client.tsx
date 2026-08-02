@@ -51,8 +51,8 @@ const initialColumns = Object.fromEntries(
 
 const AnalysisRow = ({ record, visibleColumns }: { record: PeriodicAnalysisRow; visibleColumns: ColumnKey[] }) => (
   <div className="analysis-row">
-    <div className="analysis-identity" title={record.orchard ?? ""}>
-      <span>{displayDate(record.measuredAt)}</span><span>{record.orchard ?? "—"}</span>
+    <div className="analysis-identity" title={`${record.orchard ?? "—"}${record.treatment ? `／${record.treatment}` : ""}${record.originalOrchard && record.originalOrchard !== record.orchard ? `（Input: ${record.originalOrchard}）` : ""}`}>
+      <span>{displayDate(record.measuredAt)}</span><span>{record.orchard ? `${record.orchard}${record.treatment ? `／${record.treatment}` : ""}` : "—"}</span>
     </div>
     <div className="analysis-scroll-area">
       <div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>
@@ -68,8 +68,9 @@ const AnalysisRow = ({ record, visibleColumns }: { record: PeriodicAnalysisRow; 
   </div>
 );
 
-export function PeriodicAnalysisClient({ dataError, predictionError, predictions, records }: {
+export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predictionError, predictions, records }: {
   dataError: string | null;
+  orchardMasterWarning: string | null;
   predictionError: string | null;
   predictions: readonly PredictionRecordResult[];
   records: readonly AnalysisDataRecord[];
@@ -100,6 +101,7 @@ export function PeriodicAnalysisClient({ dataError, predictionError, predictions
       <fieldset><legend>区分</legend><label><input checked={query.half === "前半"} name="half" type="radio" value="前半" onChange={() => setQuery({ ...query, half: "前半" })} />前半</label><label><input checked={query.half === "後半"} name="half" type="radio" value="後半" onChange={() => setQuery({ ...query, half: "後半" })} />後半</label></fieldset>
     </section>
     <section className="analysis-results" aria-label="定期調査一覧">
+      {orchardMasterWarning && <p className="analysis-master-warning" role="status">{orchardMasterWarning}</p>}
       {predictionError && <p className="analysis-prediction-error" role="status">{predictionError}</p>}
       <div className="analysis-result-summary"><span>検索結果</span><strong>{total}件</strong>{groups.length > 0 && <small>（{groups[0].year}〜{groups[groups.length - 1].year}年）</small>}<button type="button" onClick={() => setShowColumnPicker(!showColumnPicker)}>表示項目</button></div>
       {showColumnPicker && <div className="analysis-column-picker" aria-label="表示項目">

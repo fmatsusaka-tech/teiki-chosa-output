@@ -66,6 +66,7 @@ const previousDifference = (current: PreparedRecord, candidates: readonly Prepar
     .filter((candidate) => candidate.record.year === current.record.year
       && candidate.record.orchard === current.record.orchard
       && candidate.record.variety === current.record.variety
+      && candidate.record.treatment === current.record.treatment
       && candidate.measuredTimestamp < current.measuredTimestamp);
   if (priorCandidates.length === 0) {
     return empty();
@@ -99,6 +100,7 @@ const toRow = (
   periodYear: prepared.periodYear,
   measuredAt: prepared.record.measuredAt ?? "",
   orchard: prepared.record.orchard || null,
+  originalOrchard: "originalOrchard" in prepared.record && typeof prepared.record.originalOrchard === "string" ? prepared.record.originalOrchard : prepared.record.orchard || null,
   rawVariety: prepared.record.variety ?? "",
   varietyCategory: prepared.varietyCategory,
   treatment: prepared.record.treatment,
