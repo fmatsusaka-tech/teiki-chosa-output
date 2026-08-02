@@ -32,23 +32,24 @@ type ColumnKey = "diameter" | "diameterDifference" | "diameterPrediction"
 
 type RainfallStation = "yuasa" | "kawabe";
 type ColumnContext = { rainfallStation: RainfallStation; weatherRecords: readonly DailyWeatherRecord[] };
+type MetricTone = "diameter" | "brix" | "acidity";
 
 const displayWeather = (outcome: WeatherMetricOutcome, digits: number): string => outcome.ok ? outcome.value.toFixed(digits) : "—";
 
-const columns: Record<ColumnKey, { label: string; width: number; value: (record: PeriodicAnalysisRow, context: ColumnContext) => string; differenceValue?: (record: PeriodicAnalysisRow) => number | null }> = {
-  diameter: { label: "平均横径", width: 70, value: (record) => displayNumber(record.diameterAverage, 1) },
-  diameterDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.diameterAverage, 1).text, differenceValue: (record) => record.previousDifference.diameterAverage },
-  diameterPrediction: { label: "収穫時予測", width: 96, value: (record) => displayPrediction(record.prediction?.metrics.横径, 1) },
-  minimumDiameter: { label: "最小横径", width: 70, value: (record) => displayNumber(record.diameterMinimum, 1) },
-  minimumDiameterDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.diameterMinimum, 1).text, differenceValue: (record) => record.previousDifference.diameterMinimum },
-  maximumDiameter: { label: "最大横径", width: 70, value: (record) => displayNumber(record.diameterMaximum, 1) },
-  maximumDiameterDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.diameterMaximum, 1).text, differenceValue: (record) => record.previousDifference.diameterMaximum },
-  brix: { label: "糖度", width: 58, value: (record) => displayNumber(record.brix, 1) },
-  brixDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.brix, 1).text, differenceValue: (record) => record.previousDifference.brix },
-  brixPrediction: { label: "収穫時予測", width: 96, value: (record) => displayPrediction(record.prediction?.metrics.糖度, 1) },
-  acidity: { label: "クエン酸", width: 68, value: (record) => displayNumber(record.acidity, 2) },
-  acidityDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.acidity, 2).text, differenceValue: (record) => record.previousDifference.acidity },
-  acidityPrediction: { label: "収穫時予測", width: 96, value: (record) => displayPrediction(record.prediction?.metrics.クエン酸, 2) },
+const columns: Record<ColumnKey, { label: string; width: number; tone?: MetricTone; value: (record: PeriodicAnalysisRow, context: ColumnContext) => string; differenceValue?: (record: PeriodicAnalysisRow) => number | null }> = {
+  diameter: { label: "平均横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterAverage, 1) },
+  diameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterAverage, 1).text, differenceValue: (record) => record.previousDifference.diameterAverage },
+  diameterPrediction: { label: "収穫時予測", width: 96, tone: "diameter", value: (record) => displayPrediction(record.prediction?.metrics.横径, 1) },
+  minimumDiameter: { label: "最小横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterMinimum, 1) },
+  minimumDiameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterMinimum, 1).text, differenceValue: (record) => record.previousDifference.diameterMinimum },
+  maximumDiameter: { label: "最大横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterMaximum, 1) },
+  maximumDiameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterMaximum, 1).text, differenceValue: (record) => record.previousDifference.diameterMaximum },
+  brix: { label: "糖度", width: 58, tone: "brix", value: (record) => displayNumber(record.brix, 1) },
+  brixDifference: { label: "前回差", width: 58, tone: "brix", value: (record) => formatDifference(record.previousDifference.brix, 1).text, differenceValue: (record) => record.previousDifference.brix },
+  brixPrediction: { label: "収穫時予測", width: 96, tone: "brix", value: (record) => displayPrediction(record.prediction?.metrics.糖度, 1) },
+  acidity: { label: "クエン酸", width: 68, tone: "acidity", value: (record) => displayNumber(record.acidity, 2) },
+  acidityDifference: { label: "前回差", width: 58, tone: "acidity", value: (record) => formatDifference(record.previousDifference.acidity, 2).text, differenceValue: (record) => record.previousDifference.acidity },
+  acidityPrediction: { label: "収穫時予測", width: 96, tone: "acidity", value: (record) => displayPrediction(record.prediction?.metrics.クエン酸, 2) },
   brixAcidityRatio: { label: "糖酸比", width: 62, value: (record) => displayNumber(record.brixAcidityRatio, 1) },
   brixAcidityRatioDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.brixAcidityRatio, 1).text, differenceValue: (record) => record.previousDifference.brixAcidityRatio },
   rainfall30Days: { label: "30日降水量", width: 88, value: (record, context) => displayWeather(aggregateWeather30Days({ measuredAt: record.measuredAt, precipitationStationId: context.rainfallStation, temperatureStationId: "kawabe", records: context.weatherRecords }).precipitation, 1) },
@@ -69,7 +70,9 @@ const AnalysisRow = ({ context, record, visibleColumns }: { context: ColumnConte
           const value = columns[column].value(record, context);
           const differenceValue = columns[column].differenceValue?.(record);
           const differenceTone = differenceValue === undefined ? null : formatDifference(differenceValue, 0).tone;
-          const className = differenceTone === "positive" ? "analysis-positive" : differenceTone === "negative" ? "analysis-negative" : differenceTone === "neutral" ? "analysis-neutral" : undefined;
+          const differenceClass = differenceTone === "positive" ? "analysis-positive" : differenceTone === "negative" ? "analysis-negative" : differenceTone === "neutral" ? "analysis-neutral" : "";
+          const toneClass = columns[column].tone ? `analysis-metric-${columns[column].tone}` : "";
+          const className = [toneClass, differenceClass].filter(Boolean).join(" ") || undefined;
           return <span className={className} key={column} title={value}>{value}</span>;
         })}
     </div>
@@ -130,7 +133,7 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
           </button>
           {expanded && <div className="analysis-table-scroll" aria-label={`${group.year}年の調査結果。表を横にスクロールできます。`}>
             <div className="analysis-table" style={{ minWidth: `${tableWidth}px` }}>
-              <div className="analysis-column-headings"><div className="analysis-identity"><span>日付</span><span>園地</span></div><div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>{visibleColumns.map((column) => <span key={column}>{columns[column].label}</span>)}</div></div>
+              <div className="analysis-column-headings"><div className="analysis-identity"><span>日付</span><span>園地</span></div><div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>{visibleColumns.map((column) => <span className={columns[column].tone ? `analysis-metric-${columns[column].tone}` : undefined} key={column}>{columns[column].label}</span>)}</div></div>
               {group.rows.map((record) => <AnalysisRow context={columnContext} key={record.registrationId} record={record} visibleColumns={visibleColumns} />)}
             </div>
           </div>}
