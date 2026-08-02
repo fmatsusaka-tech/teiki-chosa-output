@@ -23,6 +23,11 @@ describe("periodic analysis table layout", () => {
     expect(stylesheet).not.toMatch(/\.analysis-column-headings\s*\{[^}]*top:/);
   });
 
+  it("keeps every harvest prediction column compact on mobile", () => {
+    expect(component.match(/Prediction:\s*\{[^}]*width:\s*96/g)).toHaveLength(3);
+    expect(component).not.toMatch(/Prediction:\s*\{[^}]*width:\s*150/);
+  });
+
   it("offers selectable Yuasa and Kawabe rainfall stations", () => {
     expect(component).toContain("降水地点");
     expect(component).toContain('<option value="yuasa">湯浅</option>');
