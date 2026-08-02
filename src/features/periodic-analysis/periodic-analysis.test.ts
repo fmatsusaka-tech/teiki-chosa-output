@@ -93,10 +93,21 @@ describe("buildPeriodicAnalysis", () => {
     const records = [
       record({ id: "current", measuredAt: "2026-08-15", averageDiameter: 52 }),
       record({ id: "same-day", measuredAt: "2026-08-15", averageDiameter: 40 }),
-      record({ id: "previous", measuredAt: "2026-08-14", averageDiameter: null }),
-      record({ id: "older", measuredAt: "2026-08-01", averageDiameter: 10 }),
+      record({ id: "previous", measuredAt: "2026-07-31", surveyMonth: "2026-07", surveyPeriod: "後半", averageDiameter: null }),
+      record({ id: "older", measuredAt: "2026-07-15", surveyMonth: "2026-07", surveyPeriod: "前半", averageDiameter: 10 }),
     ];
     expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBeNull();
+  });
+
+  it("does not compare separate records from the same survey round", () => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-07-25", surveyMonth: "2026-07", surveyPeriod: "後半", averageDiameter: 52 }),
+      record({ id: "same-round", measuredAt: "2026-07-20", surveyMonth: "2026-07", surveyPeriod: "後半", averageDiameter: 40 }),
+      record({ id: "previous-round", measuredAt: "2026-07-10", surveyMonth: "2026-07", surveyPeriod: "前半", averageDiameter: 50 }),
+    ];
+    const result = buildPeriodicAnalysis(records, { ...query, month: 7, half: "後半" });
+    expect(result[0].rows[0].previousDifference.diameterAverage).toBe(2);
+    expect(result[0].rows[1].previousDifference.diameterAverage).toBe(-10);
   });
 
   it("excludes blank variety, invalid survey month, and missing measured date without correcting them", () => {
@@ -132,9 +143,9 @@ describe("buildPeriodicAnalysis", () => {
   it("returns missing differences when the immediately previous day has multiple records", () => {
     const records = [
       record({ id: "current", measuredAt: "2026-08-15", averageDiameter: 52 }),
-      record({ id: "previous-a", measuredAt: "2026-08-10", averageDiameter: 50 }),
-      record({ id: "previous-b", measuredAt: "2026-08-10", averageDiameter: 49 }),
-      record({ id: "older", measuredAt: "2026-08-01", averageDiameter: 45 }),
+      record({ id: "previous-a", measuredAt: "2026-07-20", surveyMonth: "2026-07", surveyPeriod: "後半", averageDiameter: 50 }),
+      record({ id: "previous-b", measuredAt: "2026-07-20", surveyMonth: "2026-07", surveyPeriod: "後半", averageDiameter: 49 }),
+      record({ id: "older", measuredAt: "2026-07-01", surveyMonth: "2026-07", surveyPeriod: "前半", averageDiameter: 45 }),
     ];
     expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBeNull();
   });
