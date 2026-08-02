@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { buildOrchardAnalysis, getOrchardAnalysisFilterOptions } from "./orchard-analysis";
+import { buildOrchardAnalysis, buildOrchardComparison, getOrchardAnalysisFilterOptions } from "./orchard-analysis";
 
 const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => ({
   id: "id-1", registeredAt: null, measuredAt: "2026-07-01", fiscalYear: 2026, year: 2026, month: 7,
@@ -8,6 +8,61 @@ const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => (
   notes: null, diameterCount: null, averageDiameter: 42.1, minimumDiameter: null, maximumDiameter: null,
   brix: 9.3, acidity: 1.4, brixAcidityRatio: null, dataStatus: "正常", inputMethod: "", enteredBy: null, source: null,
   ...overrides,
+});
+
+describe("buildOrchardComparison", () => {
+  const selectionA = { orchard: "園地A", varietyCategory: "ゆら早生" };
+  const selectionB = { orchard: "園地B", varietyCategory: "ゆら早生" };
+
+  it("日付を昇順に並べ、近い日付を統合せず欠測側をnullにする", () => {
+    const result = buildOrchardComparison([
+      record({ id: "a-1", orchard: "園地A", measuredAt: "2026-07-01" }),
+      record({ id: "b-1", orchard: "園地B", measuredAt: "2026-07-02" }),
+    ], selectionA, selectionB);
+
+    expect(result.columns).toMatchObject([
+      { measuredAt: "2026-07-01", orchardA: { registrationId: "a-1" }, orchardB: null },
+      { measuredAt: "2026-07-02", orchardA: null, orchardB: { registrationId: "b-1" } },
+    ]);
+  });
+
+  it("同じ日の複数レコードを平均化せず個別列として保持する", () => {
+    const result = buildOrchardComparison([
+      record({ id: "a-1", orchard: "園地A", measuredAt: "2026-07-01", averageDiameter: 40 }),
+      record({ id: "a-2", orchard: "園地A", measuredAt: "2026-07-01", averageDiameter: 50 }),
+      record({ id: "b-1", orchard: "園地B", measuredAt: "2026-07-01", averageDiameter: 45 }),
+    ], selectionA, selectionB);
+
+    expect(result.columns).toHaveLength(2);
+    expect(result.columns.map((column) => column.orchardA?.averageDiameter)).toEqual([40, 50]);
+    expect(result.columns.map((column) => column.orchardB?.averageDiameter)).toEqual([45, undefined]);
+  });
+
+  it("6指標と欠測値を変換せず保持し、最新値を園地ごとに選ぶ", () => {
+    const result = buildOrchardComparison([
+      record({ id: "a-old", orchard: "園地A", measuredAt: "2025-12-31" }),
+      record({ id: "a-new", orchard: "園地A", measuredAt: "2026-01-01", minimumDiameter: 30, maximumDiameter: 50, brixAcidityRatio: null }),
+      record({ id: "b-new", orchard: "園地B", measuredAt: "2026-01-02" }),
+    ], selectionA, selectionB);
+
+    expect(result.latestA).toMatchObject({ registrationId: "a-new", minimumDiameter: 30, maximumDiameter: 50, brixAcidityRatio: null });
+    expect(result.latestB?.registrationId).toBe("b-new");
+    expect(result.columns.filter((column) => column.yearBoundary)).toHaveLength(2);
+  });
+
+  it("品種・処理区・分析対象状態で絞り込み、入力を変更しない", () => {
+    const source = [
+      record({ id: "keep", orchard: "園地A", treatment: "処理1" }),
+      record({ id: "other-treatment", orchard: "園地A", treatment: "処理2" }),
+      record({ id: "excluded", orchard: "園地A", treatment: "処理1", dataStatus: "取消" }),
+    ];
+    const before = structuredClone(source);
+    const result = buildOrchardComparison(source, { ...selectionA, treatment: "処理1" }, selectionB);
+
+    expect(result.columns).toHaveLength(1);
+    expect(result.columns[0].orchardA?.registrationId).toBe("keep");
+    expect(source).toEqual(before);
+  });
 });
 
 describe("buildOrchardAnalysis", () => {
