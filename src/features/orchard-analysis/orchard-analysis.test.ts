@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { buildOrchardAnalysis, buildOrchardComparison, getOrchardAnalysisFilterOptions, getOrchardSelectionOptions } from "./orchard-analysis";
+import { buildOrchardAnalysis, buildOrchardComparison, getOrchardAnalysisFilterOptions, getOrchardFilterOptions, getOrchardSelectionOptions } from "./orchard-analysis";
 
 const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => ({
   id: "id-1", registeredAt: null, measuredAt: "2026-07-01", fiscalYear: 2026, year: 2026, month: 7,
@@ -66,6 +66,21 @@ describe("buildOrchardComparison", () => {
 });
 
 describe("buildOrchardAnalysis", () => {
+  it("品種を先に選び、該当園地を最新計測日順で一度だけ返す", () => {
+    const records = [
+      record({ id: "a-old", orchard: "園地A", variety: "ゆら早生", treatment: "A", measuredAt: "2026-07-01" }),
+      record({ id: "a-new", orchard: "園地A", variety: "ゆら早生", treatment: "B", measuredAt: "2026-07-20" }),
+      record({ id: "b", orchard: "園地B", variety: "ゆら早生", treatment: null, measuredAt: "2026-07-21" }),
+      record({ id: "other", orchard: "園地C", variety: "田口", measuredAt: "2026-07-22" }),
+    ];
+
+    expect(getOrchardFilterOptions(records, "ゆら早生")).toEqual([
+      { orchard: "園地B", latestMeasuredAt: "2026-07-21", label: "園地B　最終計測 2026-07-21" },
+      { orchard: "園地A", latestMeasuredAt: "2026-07-20", label: "園地A　最終計測 2026-07-20" },
+    ]);
+    expect(getOrchardAnalysisFilterOptions(records, "園地A", "ゆら早生").treatments).toEqual(["A", "B"]);
+  });
+
   it("orders orchard and treatment pairs by latest measured date and recalculates for a year", () => {
     const records = [
       record({ orchard: "園地B", treatment: "処理2", measuredAt: "2026-07-20" }),
