@@ -68,7 +68,7 @@ describe("AnalysisDataRepository", () => {
     const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
 
     expect(parsed).toMatchObject({
-      registeredAt: "1970-01-01T00:00:00.000Z",
+      registeredAt: "1970-01-01",
       measuredAt: null,
       orchard: null,
       diameterCount: null,
@@ -76,6 +76,69 @@ describe("AnalysisDataRepository", () => {
       minimumDiameter: null,
       maximumDiameter: null,
     });
+  });
+
+  it.each([
+    ["Date(2026,6,2)", "2026-07-02"],
+    ["2026-07-02", "2026-07-02"],
+    ["2026/07/02", "2026-07-02"],
+    ["2024/02/29", "2024-02-29"],
+    ["2025-12-31", "2025-12-31"],
+    ["2026-01-01", "2026-01-01"],
+    ["2026-07-20T16:00:00Z", "2026-07-21"],
+    ["2026-07-20T00:30:00+09:00", "2026-07-20"],
+    [25569, "1970-01-01"],
+    [25569.999999, "1970-01-01"],
+  ])("normalizes registeredAt %s to a calendar date", async (registeredAt, expected) => {
+    const values = { ...recordValues, 登録日時: registeredAt };
+    const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    expect(parsed.registeredAt).toBe(expected);
+  });
+
+  it.each([
+    "Date(2023,1,29)",
+    "Date(2026,12,1)",
+    "Date(2026,6,20,10,30,0)",
+    "2026-02-29",
+    "2026/13/01",
+    "2026/07-20",
+    "2026-07/20",
+    "2026-07-20 trailing",
+    "2026-07-20T12:00:00",
+    "unknown",
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    -1,
+  ])("rejects invalid registeredAt %s", async (registeredAt) => {
+    const values = { ...recordValues, 登録日時: registeredAt };
+    await expect(new AnalysisDataRepository(source(table(headers, values))).getAll()).rejects.toThrow(
+      "登録日時",
+    );
+  });
+
+  it.each([null, undefined, "", " ", "　"])("keeps missing registeredAt %s as null", async (registeredAt) => {
+    const values = { ...recordValues, 登録日時: registeredAt };
+    const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    expect(parsed.registeredAt).toBeNull();
+  });
+
+  it("normalizes registeredAt independently of the process timezone", async () => {
+    const originalTimezone = process.env.TZ;
+    try {
+      const values = { ...recordValues, 登録日時: 25569.75 };
+      process.env.TZ = "UTC";
+      const [utc] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+      process.env.TZ = "America/Los_Angeles";
+      const [losAngeles] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+      expect(utc.registeredAt).toBe("1970-01-01");
+      expect(losAngeles.registeredAt).toBe(utc.registeredAt);
+    } finally {
+      if (originalTimezone === undefined) delete process.env.TZ;
+      else process.env.TZ = originalTimezone;
+    }
   });
 
   it.each([
@@ -128,6 +191,13 @@ describe("AnalysisDataRepository", () => {
     const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
 
     expect(parsed.measuredAt).toBeNull();
+  });
+
+  it("does not fill registeredAt from measuredAt or year and month", async () => {
+    const values = { ...recordValues, 登録日時: null, 計測日: "2026-07-20", 年: 2026, 月: 7 };
+    const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    expect(parsed.registeredAt).toBeNull();
   });
 
   it("is independent of column order", async () => {
