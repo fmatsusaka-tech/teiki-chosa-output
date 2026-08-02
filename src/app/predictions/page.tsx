@@ -1,11 +1,24 @@
-import Link from "next/link";
+import { PredictionDashboard } from "./prediction-dashboard";
+import { loadPredictionPageData } from "../../server/prediction-data/prediction-page-data";
 
-const predictions = [
-  { href: "/predictions/diameter", title: "横径予測" },
-  { href: "/predictions/brix", title: "糖度予測" },
-  { href: "/predictions/acidity", title: "クエン酸予測" },
-];
+export const dynamic = "force-dynamic";
 
-export default function PredictionsPage() {
-  return <main className="page-shell"><p className="eyebrow">PREDICTIONS</p><h1>各種予測</h1><div className="feature-grid">{predictions.map((prediction) => <Link className="feature-card" href={prediction.href} key={prediction.href}><h2>{prediction.title}</h2><p>収穫時点の状態を予測します。</p><span aria-hidden="true">→</span></Link>)}</div><Link className="back-link" href="/">ホームへ戻る</Link></main>;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+const first = (value: string | string[] | undefined): string | undefined =>
+  Array.isArray(value) ? value[0] : value;
+
+export default async function PredictionsPage({ searchParams }: { searchParams: SearchParams }) {
+  try {
+    const [data, query] = await Promise.all([loadPredictionPageData(), searchParams]);
+    return <PredictionDashboard data={data} search={{
+      year: first(query.year),
+      orchard: first(query.orchard),
+      variety: first(query.variety),
+      record: first(query.record),
+    }} />;
+  } catch (error) {
+    console.error("Failed to load prediction data", error);
+    return <main className="prediction-page"><header className="prediction-title"><p className="eyebrow">PREDICTION</p><h1>収穫時予測</h1></header><p className="prediction-error">予測データを取得できませんでした。接続設定とデータ版を確認してください。</p></main>;
+  }
 }
