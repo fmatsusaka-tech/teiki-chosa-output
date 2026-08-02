@@ -73,7 +73,7 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .analysis-table { background: #fff; }
 .analysis-column-headings, .analysis-row { display: flex; min-width: 0; height: 37px; border-bottom: 1px solid #e0e6e0; }
 .analysis-column-headings { position: relative; z-index: 9; height: 30px; background: #f8faf7; color: #536157; font-size: .68rem; font-weight: 800; }
-.analysis-identity { position: sticky; left: 0; z-index: 2; display: grid; grid-template-columns: 41px 84px; flex: 0 0 125px; width: 125px; align-items: center; overflow: hidden; border-right: 1px solid #ced8cf; background: inherit; box-shadow: 2px 0 3px rgb(31 47 36 / 8%); }
+.analysis-identity { position: sticky; left: 0; z-index: 2; display: grid; grid-template-columns: 56px 84px; flex: 0 0 140px; width: 140px; align-items: center; overflow: hidden; border-right: 1px solid #ced8cf; background: inherit; box-shadow: 2px 0 3px rgb(31 47 36 / 8%); }
 .analysis-identity span { overflow: hidden; padding: 0 4px; text-overflow: ellipsis; white-space: nowrap; }
 .analysis-identity span:first-child { padding-left: 8px; font-variant-numeric: tabular-nums; }
 .analysis-values { display: grid; flex: 1 0 auto; height: 100%; align-items: center; font-size: .82rem; font-variant-numeric: tabular-nums; }

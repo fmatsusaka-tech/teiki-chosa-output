@@ -52,6 +52,8 @@ describe("periodic analysis table layout", () => {
   it("prioritizes the day in the narrow mobile date cell", () => {
     expect(component).toContain('return match ? `${Number(match[2])}日` : "—"');
     expect(component).toContain("<span title={record.measuredAt}>{displayDay(record.measuredAt)}</span>");
+    expect(stylesheet).toMatch(/\.analysis-identity\s*\{[^}]*grid-template-columns:\s*56px 84px[^}]*flex:\s*0 0 140px/);
+    expect(component).toContain("const tableWidth = 140 + visibleColumns.reduce");
   });
 
   it("places detailed diameter columns after the weather columns", () => {
