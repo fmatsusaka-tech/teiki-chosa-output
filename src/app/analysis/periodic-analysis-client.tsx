@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { buildPeriodicAnalysis } from "../../features/periodic-analysis/periodic-analysis";
@@ -106,7 +107,7 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
   useEffect(() => setExpandedYears(new Set(groups.map((group) => group.year))), [groups]);
 
   return <main className="analysis-page">
-    <header className="analysis-title"><p className="eyebrow">ANALYSIS</p><h1>定期調査分析</h1></header>
+    <header className="analysis-title"><Link className="home-link" href="/">← ホーム</Link><p className="eyebrow">ANALYSIS</p><h1>定期調査分析</h1></header>
     <section className="analysis-filters" aria-label="検索条件">
       <label>品種<select value={query.varietyCategory} onChange={(event) => setQuery({ ...query, varietyCategory: event.target.value })}>{categoryOptions.map((category) => <option key={category}>{category}</option>)}</select></label>
       <label>月<select value={query.month} onChange={(event) => setQuery({ ...query, month: Number(event.target.value) })}>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}月</option>)}</select></label>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { AnalysisDataRecord } from "../../../contracts/analysis-data";
 import { buildOrchardComparison, getOrchardAnalysisFilterOptions, getOrchardSelectionOptions, orchardSelectionKey } from "../../../features/orchard-analysis/orchard-analysis";
@@ -78,7 +79,7 @@ export function OrchardComparisonClient({ dataError, orchardMasterWarning, recor
   const visibleMetrics = metrics.filter((metric) => metricFilter === "all" || metric.filter === metricFilter);
 
   return <main className="comparison-page">
-    <header className="comparison-title"><p className="eyebrow">COMPARE</p><h1>2園地比較</h1><p>実際の計測日を横軸に並べ、近い日付を統合せず比較します。</p></header>
+    <header className="comparison-title"><Link className="home-link" href="/">← ホーム</Link><p className="eyebrow">COMPARE</p><h1>2園地比較</h1><p>実際の計測日を横軸に並べ、近い日付を統合せず比較します。</p></header>
     <section className="comparison-selectors" aria-label="比較する園地">
       <SelectionControls side="A" records={records} orchardOptions={options} selection={orchardA} onSelection={setOrchardA} />
       <SelectionControls side="B" records={records} orchardOptions={options} selection={orchardB} onSelection={setOrchardB} />

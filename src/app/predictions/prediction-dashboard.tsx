@@ -22,7 +22,7 @@ export const PredictionDashboard = ({ bundle, expectedDataVersion, search }: { b
   const result = submitted ? simulatePrediction(bundle, { predictionModel, assumedDate: search.date ?? "", values, expectedDataVersion }) : null;
 
   return <main className="prediction-page">
-    <header className="prediction-title"><p className="eyebrow">PREDICTION</p><h1>各種予測システム</h1><p>自由に入力した仮定日・仮定値による試算です。入力内容は保存されません。</p></header>
+    <header className="prediction-title"><Link className="home-link" href="/">← ホーム</Link><p className="eyebrow">PREDICTION</p><h1>各種予測システム</h1><p>自由に入力した仮定日・仮定値による試算です。入力内容は保存されません。</p></header>
     <form className="prediction-simulator-form" action="/predictions" method="get">
       <label>品種<select name="model" defaultValue={predictionModel}>{models.map((model) => <option key={model.predictionModel} value={model.predictionModel}>{model.displayCategory}</option>)}</select></label>
       <label>仮定日<input name="date" type="date" required defaultValue={search.date ?? ""} /></label>
@@ -33,6 +33,6 @@ export const PredictionDashboard = ({ bundle, expectedDataVersion, search }: { b
       <dl className="prediction-context"><div><dt>品種・モデル</dt><dd>{models.find((model) => model.predictionModel === result.predictionModel)?.displayCategory ?? result.predictionModel}</dd></div><div><dt>仮定日</dt><dd>{result.assumedDate || "未入力"}</dd></div><div><dt>既定収穫目標日</dt><dd>{result.targetMonthDay ?? "—"}</dd></div></dl>
       <div className="prediction-metrics">{fields.map(([metric]) => { const metricResult = result.metrics[metric]; return <article className="prediction-metric" key={metric}><h2>{metric}</h2>{metricResult.ok ? <dl><div><dt>仮定値</dt><dd>{metricResult.measuredValue}</dd></div><div><dt>予測値</dt><dd className="prediction-value">{metricResult.predictedValue}</dd></div></dl> : <p className="prediction-unavailable"><strong>計算対象外</strong><br />{metricResult.reason}</p>}</article>; })}</div>
     </section> : <p className="prediction-empty">品種、仮定日、各指標の仮定値を入力して試算してください。</p>}
-    <p className="prediction-version">データ版 {expectedDataVersion}</p><Link className="back-link" href="/">ホームへ戻る</Link>
+    <p className="prediction-version">データ版 {expectedDataVersion}</p>
   </main>;
 };

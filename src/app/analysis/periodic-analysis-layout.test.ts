@@ -34,4 +34,9 @@ describe("periodic analysis table layout", () => {
     expect(component).toContain('<option value="kawabe">川辺</option>');
     expect(component).not.toContain("analysis-future-option");
   });
+
+  it("offers a visible home navigation link", () => {
+    expect(component).toContain('className="home-link" href="/"');
+    expect(component).toContain("← ホーム");
+  });
 });
