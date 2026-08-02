@@ -13,8 +13,8 @@ const features = [
   },
   {
     href: "/predictions",
-    title: "各種予測",
-    description: "横径、糖度、クエン酸の収穫時予測を表示します。",
+    title: "各種予測システム",
+    description: "自由な仮定日と仮定値から、横径、糖度、クエン酸を試算します。",
   },
   {
     href: "/data-management",

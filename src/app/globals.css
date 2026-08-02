@@ -194,6 +194,10 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .prediction-filters label { display: grid; gap: 4px; color: #415245; font-size: .72rem; font-weight: 700; }
 .prediction-filters select { width: 100%; min-width: 0; height: 38px; border: 1px solid #aebcaf; border-radius: 6px; padding: 0 7px; background: #fff; color: #172018; font: inherit; font-size: .82rem; }
 .prediction-filters button { grid-column: 1 / -1; min-height: 42px; border: 0; border-radius: 8px; background: #1f5a30; color: #fff; font: inherit; font-weight: 800; }
+.prediction-simulator-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-inline: -12px; padding: 12px; border-block: 1px solid #cbd5cc; background: #f4f6f3; }
+.prediction-simulator-form label { display: grid; gap: 4px; min-width: 0; color: #415245; font-size: .72rem; font-weight: 700; }
+.prediction-simulator-form select, .prediction-simulator-form input { width: 100%; min-width: 0; height: 40px; border: 1px solid #aebcaf; border-radius: 6px; padding: 0 8px; background: #fff; color: #172018; font: inherit; font-size: .86rem; }
+.prediction-simulator-form button { grid-column: 1 / -1; min-height: 44px; border: 0; border-radius: 8px; background: #1f5a30; color: #fff; font: inherit; font-weight: 800; }
 .prediction-result { margin-top: 16px; }
 .prediction-context { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; overflow: hidden; border: 1px solid #d2dbd2; border-radius: 12px; background: #fff; }
 .prediction-context div { min-width: 0; padding: 10px 12px; border-bottom: 1px solid #e1e6e1; }
@@ -219,4 +223,6 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
   .prediction-filters { grid-template-columns: 90px 1fr 1fr 1.4fr auto; margin-inline: 0; padding-inline: 0; }
   .prediction-filters button { grid-column: auto; align-self: end; min-width: 96px; }
   .prediction-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .prediction-simulator-form { grid-template-columns: repeat(5, minmax(0, 1fr)); margin-inline: 0; padding-inline: 0; }
+  .prediction-simulator-form button { grid-column: 1 / -1; }
 }
