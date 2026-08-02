@@ -284,6 +284,47 @@ describe("AnalysisDataRepository", () => {
     expect(parsed).toMatchObject({ year: 2026, averageDiameter: 42.74 });
   });
 
+  it.each([
+    [485, 48.5],
+    ["485", 48.5],
+    [100, 10],
+    [999.9, 99.99],
+    [99.9, 99.9],
+    [1000, 1000],
+  ])("normalizes legacy diameter value %s without changing values outside the legacy range", async (averageDiameter, expected) => {
+    const values = { ...recordValues, 横径平均: averageDiameter };
+    const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    expect(parsed.averageDiameter).toBe(expected);
+  });
+
+  it("normalizes only average, minimum, and maximum legacy diameter columns", async () => {
+    const values = {
+      ...recordValues,
+      横径個数: 485,
+      横径平均: 485,
+      横径最小: "420",
+      横径最大: 510,
+      糖度: 485,
+      酸度: 485,
+      糖酸比: 485,
+    };
+    const rows = table(headers, values);
+    const snapshot = structuredClone(rows);
+    const [parsed] = await new AnalysisDataRepository(source(rows)).getAll();
+
+    expect(parsed).toMatchObject({
+      diameterCount: 485,
+      averageDiameter: 48.5,
+      minimumDiameter: 42,
+      maximumDiameter: 51,
+      brix: 485,
+      acidity: 485,
+      brixAcidityRatio: 485,
+    });
+    expect(rows).toEqual(snapshot);
+  });
+
   it("filters standard records with the shared inclusion rule", async () => {
     const nonStandardValues: Record<string, unknown> = {
       ...recordValues,

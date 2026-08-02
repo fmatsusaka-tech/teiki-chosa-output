@@ -54,8 +54,7 @@ const AnalysisRow = ({ record, visibleColumns }: { record: PeriodicAnalysisRow; 
     <div className="analysis-identity" title={`${record.orchard ?? "—"}${record.treatment ? `／${record.treatment}` : ""}${record.originalOrchard && record.originalOrchard !== record.orchard ? `（Input: ${record.originalOrchard}）` : ""}`}>
       <span>{displayDate(record.measuredAt)}</span><span>{record.orchard ? `${record.orchard}${record.treatment ? `／${record.treatment}` : ""}` : "—"}</span>
     </div>
-    <div className="analysis-scroll-area">
-      <div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>
+    <div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>
         {visibleColumns.map((column) => {
           const value = columns[column].value(record);
           const differenceValue = columns[column].differenceValue?.(record);
@@ -63,7 +62,6 @@ const AnalysisRow = ({ record, visibleColumns }: { record: PeriodicAnalysisRow; 
           const className = differenceTone === "positive" ? "analysis-positive" : differenceTone === "negative" ? "analysis-negative" : differenceTone === "neutral" ? "analysis-neutral" : undefined;
           return <span className={className} key={column} title={value}>{value}</span>;
         })}
-      </div>
     </div>
   </div>
 );
@@ -89,6 +87,7 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
   const [visible, setVisible] = useState(initialColumns);
   const [showColumnPicker, setShowColumnPicker] = useState(false);
   const visibleColumns = (Object.keys(visible) as ColumnKey[]).filter((column) => visible[column]);
+  const tableWidth = 125 + visibleColumns.reduce((width, column) => width + columns[column].width, 0);
   const total = groups.reduce((count, group) => count + group.rows.length, 0);
 
   useEffect(() => setExpandedYears(new Set(groups.map((group) => group.year))), [groups]);
@@ -114,9 +113,11 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
           <button className="analysis-year-heading" type="button" onClick={() => setExpandedYears((years) => { const next = new Set(years); if (expanded) next.delete(group.year); else next.add(group.year); return next; })}>
             <span aria-hidden="true">{expanded ? "▼" : "▶"}</span> {group.year}年（{group.rows.length}件）
           </button>
-          {expanded && <div className="analysis-table">
-            <div className="analysis-column-headings"><div className="analysis-identity"><span>日付</span><span>園地</span></div><div className="analysis-scroll-area"><div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>{visibleColumns.map((column) => <span key={column}>{columns[column].label}</span>)}</div></div></div>
-            {group.rows.map((record) => <AnalysisRow key={record.registrationId} record={record} visibleColumns={visibleColumns} />)}
+          {expanded && <div className="analysis-table-scroll" aria-label={`${group.year}年の調査結果。表を横にスクロールできます。`}>
+            <div className="analysis-table" style={{ minWidth: `${tableWidth}px` }}>
+              <div className="analysis-column-headings"><div className="analysis-identity"><span>日付</span><span>園地</span></div><div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>{visibleColumns.map((column) => <span key={column}>{columns[column].label}</span>)}</div></div>
+              {group.rows.map((record) => <AnalysisRow key={record.registrationId} record={record} visibleColumns={visibleColumns} />)}
+            </div>
           </div>}
         </section>;
       })}
