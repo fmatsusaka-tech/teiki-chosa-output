@@ -23,8 +23,7 @@ export function OrchardAnalysisClient({ dataError, orchardMasterWarning, records
   const varietyCategories = useMemo(() => getOrchardAnalysisFilterOptions(records).varietyCategories, [records]);
   const initialVariety = varietyCategories[0] ?? "";
   const initialOrchard = getOrchardFilterOptions(records, initialVariety)[0]?.orchard ?? "";
-  const initialTreatment = getOrchardAnalysisFilterOptions(records, initialOrchard, initialVariety).treatments[0] ?? null;
-  const [query, setQuery] = useState<OrchardAnalysisQuery>({ orchard: initialOrchard, varietyCategory: initialVariety, treatment: initialTreatment });
+  const [query, setQuery] = useState<OrchardAnalysisQuery>({ orchard: initialOrchard, varietyCategory: initialVariety });
   const [visible, setVisible] = useState(initialColumns);
   const [showColumnPicker, setShowColumnPicker] = useState(false);
   const orchardOptions = useMemo(() => getOrchardFilterOptions(records, query.varietyCategory), [records, query.varietyCategory]);
@@ -37,21 +36,19 @@ export function OrchardAnalysisClient({ dataError, orchardMasterWarning, records
   const tableWidth = 58 + resultColumns.reduce((width, column) => width + columns[column].width, 0);
   const changeVarietyCategory = (varietyCategory: string) => {
     const orchard = getOrchardFilterOptions(records, varietyCategory)[0]?.orchard ?? "";
-    const treatment = getOrchardAnalysisFilterOptions(records, orchard, varietyCategory).treatments[0] ?? null;
-    setQuery({ varietyCategory, orchard, treatment });
+    setQuery({ varietyCategory, orchard });
   };
   const changeOrchard = (orchard: string) => {
-    const treatment = getOrchardAnalysisFilterOptions(records, orchard, query.varietyCategory).treatments[0] ?? null;
-    setQuery({ ...query, orchard, treatment });
+    setQuery({ varietyCategory: query.varietyCategory, orchard });
   };
-  const changeTreatment = (treatmentKey: string) => setQuery({ ...query, treatment: JSON.parse(treatmentKey) as string | null });
+  const changeTreatment = (treatmentKey: string) => setQuery({ ...query, treatment: treatmentKey === "all" ? undefined : JSON.parse(treatmentKey) as string | null });
 
   return <main className="orchard-page">
     <header className="orchard-title"><Link className="home-link" href="/">← ホーム</Link><p className="eyebrow">ORCHARDS</p><h1>園地分析</h1><p>1回の調査を1行として表示する時系列カルテです。</p><a className="orchard-compare-link" href="/orchards/compare">2園地を比較する →</a></header>
     <section className="orchard-filters" aria-label="園地分析の検索条件">
       <label>品種<select value={query.varietyCategory} onChange={(event) => changeVarietyCategory(event.target.value)}>{varietyCategories.map((variety) => <option key={variety} value={variety}>{variety}</option>)}</select></label>
       <label>園地<select value={query.orchard} onChange={(event) => changeOrchard(event.target.value)}>{orchardOptions.map((option) => <option key={option.orchard} value={option.orchard}>{option.label}</option>)}</select></label>
-      <label>区<select value={JSON.stringify(query.treatment ?? null)} onChange={(event) => changeTreatment(event.target.value)}>{treatments.map((treatment) => <option key={JSON.stringify(treatment)} value={JSON.stringify(treatment)}>{treatment ?? "処理区なし"}</option>)}</select></label>
+      <label>区<select value={query.treatment === undefined ? "all" : JSON.stringify(query.treatment)} onChange={(event) => changeTreatment(event.target.value)}><option value="all">すべて</option>{treatments.map((treatment) => <option key={JSON.stringify(treatment)} value={JSON.stringify(treatment)}>{treatment ?? "処理区なし"}</option>)}</select></label>
     </section>
     <section className="orchard-results" aria-label="園地分析の時系列一覧">
       {orchardMasterWarning && <p className="orchard-master-warning" role="status">{orchardMasterWarning}</p>}

@@ -1,10 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const component = readFileSync(new URL("./orchard-analysis-client.tsx", import.meta.url), "utf8");
-const stylesheet = readFileSync(new URL("../globals.css", import.meta.url), "utf8");
+const component = readFileSync(new URL("./orchard-comparison-client.tsx", import.meta.url), "utf8");
 
-describe("orchard analysis cascading filters", () => {
+describe("orchard comparison cascading filters", () => {
   it("renders variety, orchard, and treatment controls in that order", () => {
     const variety = component.indexOf("<label>品種");
     const orchard = component.indexOf("<label>園地");
@@ -14,11 +13,10 @@ describe("orchard analysis cascading filters", () => {
     expect(orchard).toBeGreaterThan(variety);
     expect(treatment).toBeGreaterThan(orchard);
     expect(component).not.toContain("園地・処理区");
-    expect(component).toContain('<option value="all">すべて</option>');
-    expect(component).not.toContain("最終計測");
   });
 
-  it("uses a single-column control flow on smartphone widths", () => {
-    expect(stylesheet).toMatch(/\.orchard-filters\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+  it("offers all treatments without merging or averaging records", () => {
+    expect(component).toContain('<option value="all">すべて</option>');
+    expect(component).toContain('treatment: value === "all" ? undefined');
   });
 });

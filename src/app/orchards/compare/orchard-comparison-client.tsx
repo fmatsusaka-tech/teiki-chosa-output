@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { AnalysisDataRecord } from "../../../contracts/analysis-data";
-import { buildOrchardComparison, getOrchardAnalysisFilterOptions, getOrchardSelectionOptions, orchardSelectionKey } from "../../../features/orchard-analysis/orchard-analysis";
-import type { OrchardComparisonMetric, OrchardComparisonRecord, OrchardComparisonSelection, OrchardSelectionOption } from "../../../features/orchard-analysis/orchard-analysis.types";
+import { buildOrchardComparison, getOrchardAnalysisFilterOptions, getOrchardFilterOptions } from "../../../features/orchard-analysis/orchard-analysis";
+import type { OrchardComparisonMetric, OrchardComparisonRecord, OrchardComparisonSelection } from "../../../features/orchard-analysis/orchard-analysis.types";
 
 type Side = "A" | "B";
 type MetricFilter = "all" | "diameter" | "brix" | "acidity" | "ratio";
@@ -26,31 +26,32 @@ const displayDate = (value: string): string => `${Number(value.slice(5, 7))}/${N
 type SelectionControlsProps = {
   side: Side;
   records: readonly AnalysisDataRecord[];
-  orchardOptions: readonly OrchardSelectionOption[];
   selection: OrchardComparisonSelection;
   onSelection: (selection: OrchardComparisonSelection) => void;
 };
 
-function SelectionControls({ side, records, orchardOptions, selection, onSelection }: SelectionControlsProps) {
-  const varieties = getOrchardAnalysisFilterOptions(records, selection.orchard, undefined, selection.treatment ?? null).varietyCategories;
-  const changeOrchard = (key: string) => {
-    const option = orchardOptions.find((candidate) => candidate.key === key);
-    if (!option) return;
-    const nextVarieties = getOrchardAnalysisFilterOptions(records, option.orchard, undefined, option.treatment).varietyCategories;
-    onSelection({ orchard: option.orchard, treatment: option.treatment, varietyCategory: nextVarieties[0] ?? "" });
-  };
+function SelectionControls({ side, records, selection, onSelection }: SelectionControlsProps) {
+  const varieties = getOrchardAnalysisFilterOptions(records).varietyCategories;
+  const orchardOptions = getOrchardFilterOptions(records, selection.varietyCategory);
+  const treatments = getOrchardAnalysisFilterOptions(records, selection.orchard, selection.varietyCategory).treatments;
   const changeVariety = (varietyCategory: string) => {
-    onSelection({ ...selection, varietyCategory });
+    const orchard = getOrchardFilterOptions(records, varietyCategory)[0]?.orchard ?? "";
+    onSelection({ orchard, varietyCategory });
   };
+  const changeOrchard = (orchard: string) => {
+    onSelection({ orchard, varietyCategory: selection.varietyCategory });
+  };
+  const changeTreatment = (value: string) => onSelection({ ...selection, treatment: value === "all" ? undefined : JSON.parse(value) as string | null });
   return <fieldset className={`comparison-selector comparison-selector-${side.toLowerCase()}`}>
     <legend>園地{side}</legend>
-    <label>園地・処理区<select value={orchardSelectionKey(selection.orchard, selection.treatment ?? null)} onChange={(event) => changeOrchard(event.target.value)}>{orchardOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
     <label>品種<select value={selection.varietyCategory} onChange={(event) => changeVariety(event.target.value)}>{varieties.map((variety) => <option key={variety}>{variety}</option>)}</select></label>
+    <label>園地<select value={selection.orchard} onChange={(event) => changeOrchard(event.target.value)}>{orchardOptions.map((option) => <option key={option.orchard} value={option.orchard}>{option.label}</option>)}</select></label>
+    <label>区<select value={selection.treatment === undefined ? "all" : JSON.stringify(selection.treatment)} onChange={(event) => changeTreatment(event.target.value)}><option value="all">すべて</option>{treatments.map((treatment) => <option key={JSON.stringify(treatment)} value={JSON.stringify(treatment)}>{treatment ?? "処理区なし"}</option>)}</select></label>
   </fieldset>;
 }
 
 const sideLabel = (side: Side, selection: OrchardComparisonSelection): string => {
-  const treatment = selection.treatment === undefined ? "" : ` / ${selection.treatment ?? "処理区未設定"}`;
+  const treatment = selection.treatment === undefined ? " / すべて" : ` / ${selection.treatment ?? "処理区未設定"}`;
   return `園地${side} ${selection.orchard}${treatment}`;
 };
 
@@ -67,13 +68,13 @@ function LatestCard({ side, selection, record }: { side: Side; selection: Orchar
 }
 
 export function OrchardComparisonClient({ dataError, orchardMasterWarning, records }: { dataError: string | null; orchardMasterWarning: string | null; records: readonly AnalysisDataRecord[] }) {
-  const options = useMemo(() => getOrchardSelectionOptions(records), [records]);
-  const first = options[0] ?? { orchard: "", treatment: null };
-  const second = options[1] ?? first;
-  const firstVariety = getOrchardAnalysisFilterOptions(records, first.orchard, undefined, first.treatment).varietyCategories[0] ?? "";
-  const secondVariety = getOrchardAnalysisFilterOptions(records, second.orchard, undefined, second.treatment).varietyCategories[0] ?? "";
-  const [orchardA, setOrchardA] = useState<OrchardComparisonSelection>({ orchard: first.orchard, treatment: first.treatment, varietyCategory: firstVariety });
-  const [orchardB, setOrchardB] = useState<OrchardComparisonSelection>({ orchard: second.orchard, treatment: second.treatment, varietyCategory: secondVariety });
+  const varieties = useMemo(() => getOrchardAnalysisFilterOptions(records).varietyCategories, [records]);
+  const initialVariety = varieties[0] ?? "";
+  const initialOrchards = getOrchardFilterOptions(records, initialVariety);
+  const firstOrchard = initialOrchards[0]?.orchard ?? "";
+  const secondOrchard = initialOrchards[1]?.orchard ?? firstOrchard;
+  const [orchardA, setOrchardA] = useState<OrchardComparisonSelection>({ orchard: firstOrchard, varietyCategory: initialVariety });
+  const [orchardB, setOrchardB] = useState<OrchardComparisonSelection>({ orchard: secondOrchard, varietyCategory: initialVariety });
   const [metricFilter, setMetricFilter] = useState<MetricFilter>("all");
   const comparison = useMemo(() => buildOrchardComparison(records, orchardA, orchardB), [records, orchardA, orchardB]);
   const visibleMetrics = metrics.filter((metric) => metricFilter === "all" || metric.filter === metricFilter);
@@ -81,8 +82,8 @@ export function OrchardComparisonClient({ dataError, orchardMasterWarning, recor
   return <main className="comparison-page">
     <header className="comparison-title"><Link className="home-link" href="/">← ホーム</Link><p className="eyebrow">COMPARE</p><h1>2園地比較</h1><p>実際の計測日を横軸に並べ、近い日付を統合せず比較します。</p></header>
     <section className="comparison-selectors" aria-label="比較する園地">
-      <SelectionControls side="A" records={records} orchardOptions={options} selection={orchardA} onSelection={setOrchardA} />
-      <SelectionControls side="B" records={records} orchardOptions={options} selection={orchardB} onSelection={setOrchardB} />
+      <SelectionControls side="A" records={records} selection={orchardA} onSelection={setOrchardA} />
+      <SelectionControls side="B" records={records} selection={orchardB} onSelection={setOrchardB} />
     </section>
     {orchardMasterWarning && <p className="comparison-master-warning" role="status">{orchardMasterWarning}</p>}
     {dataError ? <p className="comparison-empty">{dataError}</p> : <>
