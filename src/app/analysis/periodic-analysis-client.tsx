@@ -104,7 +104,7 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
   const [rainfallStation, setRainfallStation] = useState<RainfallStation>("yuasa");
   const visibleColumns = (Object.keys(visible) as ColumnKey[]).filter((column) => visible[column]);
   const columnContext = useMemo<ColumnContext>(() => ({ rainfallStation, weatherRecords }), [rainfallStation, weatherRecords]);
-  const tableWidth = 125 + visibleColumns.reduce((width, column) => width + columns[column].width, 0);
+  const tableWidth = 140 + visibleColumns.reduce((width, column) => width + columns[column].width, 0);
   const total = groups.reduce((count, group) => count + group.rows.length, 0);
 
   useEffect(() => setExpandedYears(new Set(groups.map((group) => group.year))), [groups]);
