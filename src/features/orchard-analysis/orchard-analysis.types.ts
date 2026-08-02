@@ -23,6 +23,14 @@ export type OrchardAnalysisFilterOptions = {
   treatments: (string | null)[];
 };
 
+export type OrchardSelectionOption = {
+  key: string;
+  orchard: string;
+  treatment: string | null;
+  latestMeasuredAt: string | null;
+  label: string;
+};
+
 export type OrchardComparisonSelection = OrchardAnalysisQuery;
 
 export type OrchardComparisonMetric =

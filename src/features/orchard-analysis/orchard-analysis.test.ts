@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { buildOrchardAnalysis, buildOrchardComparison, getOrchardAnalysisFilterOptions } from "./orchard-analysis";
+import { buildOrchardAnalysis, buildOrchardComparison, getOrchardAnalysisFilterOptions, getOrchardSelectionOptions } from "./orchard-analysis";
 
 const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => ({
   id: "id-1", registeredAt: null, measuredAt: "2026-07-01", fiscalYear: 2026, year: 2026, month: 7,
@@ -66,6 +66,33 @@ describe("buildOrchardComparison", () => {
 });
 
 describe("buildOrchardAnalysis", () => {
+  it("orders orchard and treatment pairs by latest measured date and recalculates for a year", () => {
+    const records = [
+      record({ orchard: "園地B", treatment: "処理2", measuredAt: "2026-07-20" }),
+      record({ orchard: "園地A", treatment: "処理2", measuredAt: "2026-07-20" }),
+      record({ orchard: "園地A", treatment: "処理1", measuredAt: "2026-07-20" }),
+      record({ orchard: "園地C", treatment: null, measuredAt: "2025-08-01" }),
+      record({ orchard: "園地D", treatment: null, measuredAt: null }),
+    ];
+    expect(getOrchardSelectionOptions(records).map((option) => option.label)).toEqual([
+      "園地A／処理1　最終計測 2026-07-20", "園地A／処理2　最終計測 2026-07-20", "園地B／処理2　最終計測 2026-07-20", "園地C／処理区なし　最終計測 2025-08-01", "園地D／処理区なし　最終計測 —",
+    ]);
+    expect(getOrchardSelectionOptions(records, 2025).map((option) => option.orchard)).toEqual(["園地C"]);
+  });
+
+  it("並び順が変わっても園地と処理区から作る選択キーを維持する", () => {
+    const before = getOrchardSelectionOptions([
+      record({ orchard: "園地A", treatment: "処理1", measuredAt: "2026-07-01" }),
+      record({ orchard: "園地B", treatment: "処理2", measuredAt: "2026-07-02" }),
+    ]);
+    const after = getOrchardSelectionOptions([
+      record({ orchard: "園地A", treatment: "処理1", measuredAt: "2026-07-03" }),
+      record({ orchard: "園地B", treatment: "処理2", measuredAt: "2026-07-02" }),
+    ]);
+
+    expect(new Set(after.map((option) => option.key))).toEqual(new Set(before.map((option) => option.key)));
+  });
+
   it("検索候補を園地、品種カテゴリ、処理区の順に連動させる", () => {
     const records = [
       record({ id: "yura-a", orchard: "吉川", variety: "ゆら早生", treatment: "A" }),
