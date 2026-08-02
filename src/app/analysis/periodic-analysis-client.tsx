@@ -7,6 +7,7 @@ import type { PeriodicAnalysisQuery, PeriodicAnalysisRow } from "../../features/
 import { formatDifference } from "../../features/periodic-analysis/periodic-analysis-display";
 import { getVarietyCategory } from "../../features/periodic-analysis/variety-category";
 import type { PredictionMetricResult, PredictionRecordResult } from "../../features/prediction-integration/prediction-integration.types";
+import { aggregateWeather30Days, type DailyWeatherRecord, type WeatherMetricOutcome } from "../../features/weather/weather-30-day";
 
 const fallbackCategories = ["ゆら早生", "早生(宮川・興津 等、又は山下紅)", "田口", "中生(向山など)", "晩生", "丹生系"];
 
@@ -25,9 +26,15 @@ type ColumnKey = "diameter" | "diameterDifference" | "diameterPrediction"
   | "maximumDiameter" | "maximumDiameterDifference"
   | "brix" | "brixDifference" | "brixPrediction"
   | "acidity" | "acidityDifference" | "acidityPrediction"
-  | "brixAcidityRatio" | "brixAcidityRatioDifference";
+  | "brixAcidityRatio" | "brixAcidityRatioDifference"
+  | "rainfall30Days" | "temperature30Days";
 
-const columns: Record<ColumnKey, { label: string; width: number; value: (record: PeriodicAnalysisRow) => string; differenceValue?: (record: PeriodicAnalysisRow) => number | null }> = {
+type RainfallStation = "yuasa" | "kawabe";
+type ColumnContext = { rainfallStation: RainfallStation; weatherRecords: readonly DailyWeatherRecord[] };
+
+const displayWeather = (outcome: WeatherMetricOutcome, digits: number): string => outcome.ok ? outcome.value.toFixed(digits) : "—";
+
+const columns: Record<ColumnKey, { label: string; width: number; value: (record: PeriodicAnalysisRow, context: ColumnContext) => string; differenceValue?: (record: PeriodicAnalysisRow) => number | null }> = {
   diameter: { label: "平均横径", width: 70, value: (record) => displayNumber(record.diameterAverage, 1) },
   diameterDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.diameterAverage, 1).text, differenceValue: (record) => record.previousDifference.diameterAverage },
   diameterPrediction: { label: "収穫時予測", width: 150, value: (record) => displayPrediction(record.prediction?.metrics.横径, 1) },
@@ -43,20 +50,22 @@ const columns: Record<ColumnKey, { label: string; width: number; value: (record:
   acidityPrediction: { label: "収穫時予測", width: 150, value: (record) => displayPrediction(record.prediction?.metrics.クエン酸, 2) },
   brixAcidityRatio: { label: "糖酸比", width: 62, value: (record) => displayNumber(record.brixAcidityRatio, 1) },
   brixAcidityRatioDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.brixAcidityRatio, 1).text, differenceValue: (record) => record.previousDifference.brixAcidityRatio },
+  rainfall30Days: { label: "30日降水量", width: 88, value: (record, context) => displayWeather(aggregateWeather30Days({ measuredAt: record.measuredAt, precipitationStationId: context.rainfallStation, temperatureStationId: "kawabe", records: context.weatherRecords }).precipitation, 1) },
+  temperature30Days: { label: "30日平均気温", width: 96, value: (record, context) => displayWeather(aggregateWeather30Days({ measuredAt: record.measuredAt, precipitationStationId: context.rainfallStation, temperatureStationId: "kawabe", records: context.weatherRecords }).meanTemperature, 1) },
 };
 
 const initialColumns = Object.fromEntries(
   (Object.keys(columns) as ColumnKey[]).map((column) => [column, true]),
 ) as Record<ColumnKey, boolean>;
 
-const AnalysisRow = ({ record, visibleColumns }: { record: PeriodicAnalysisRow; visibleColumns: ColumnKey[] }) => (
+const AnalysisRow = ({ context, record, visibleColumns }: { context: ColumnContext; record: PeriodicAnalysisRow; visibleColumns: ColumnKey[] }) => (
   <div className="analysis-row">
     <div className="analysis-identity" title={`${record.orchard ?? "—"}${record.treatment ? `／${record.treatment}` : ""}${record.originalOrchard && record.originalOrchard !== record.orchard ? `（Input: ${record.originalOrchard}）` : ""}`}>
       <span>{displayDate(record.measuredAt)}</span><span>{record.orchard ? `${record.orchard}${record.treatment ? `／${record.treatment}` : ""}` : "—"}</span>
     </div>
     <div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>
         {visibleColumns.map((column) => {
-          const value = columns[column].value(record);
+          const value = columns[column].value(record, context);
           const differenceValue = columns[column].differenceValue?.(record);
           const differenceTone = differenceValue === undefined ? null : formatDifference(differenceValue, 0).tone;
           const className = differenceTone === "positive" ? "analysis-positive" : differenceTone === "negative" ? "analysis-negative" : differenceTone === "neutral" ? "analysis-neutral" : undefined;
@@ -66,12 +75,14 @@ const AnalysisRow = ({ record, visibleColumns }: { record: PeriodicAnalysisRow; 
   </div>
 );
 
-export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predictionError, predictions, records }: {
+export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predictionError, predictions, records, weatherRecords, weatherWarning }: {
   dataError: string | null;
   orchardMasterWarning: string | null;
   predictionError: string | null;
   predictions: readonly PredictionRecordResult[];
   records: readonly AnalysisDataRecord[];
+  weatherRecords: readonly DailyWeatherRecord[];
+  weatherWarning: string | null;
 }) {
   const availableCategories = useMemo(() => [...new Set(records.map((record) => getVarietyCategory(record.variety)).filter((category): category is string => category !== null))], [records]);
   const categoryOptions = availableCategories.length > 0 ? availableCategories : fallbackCategories;
@@ -86,7 +97,9 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [visible, setVisible] = useState(initialColumns);
   const [showColumnPicker, setShowColumnPicker] = useState(false);
+  const [rainfallStation, setRainfallStation] = useState<RainfallStation>("yuasa");
   const visibleColumns = (Object.keys(visible) as ColumnKey[]).filter((column) => visible[column]);
+  const columnContext = useMemo<ColumnContext>(() => ({ rainfallStation, weatherRecords }), [rainfallStation, weatherRecords]);
   const tableWidth = 125 + visibleColumns.reduce((width, column) => width + columns[column].width, 0);
   const total = groups.reduce((count, group) => count + group.rows.length, 0);
 
@@ -98,14 +111,15 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
       <label>品種<select value={query.varietyCategory} onChange={(event) => setQuery({ ...query, varietyCategory: event.target.value })}>{categoryOptions.map((category) => <option key={category}>{category}</option>)}</select></label>
       <label>月<select value={query.month} onChange={(event) => setQuery({ ...query, month: Number(event.target.value) })}>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}月</option>)}</select></label>
       <fieldset><legend>区分</legend><label><input checked={query.half === "前半"} name="half" type="radio" value="前半" onChange={() => setQuery({ ...query, half: "前半" })} />前半</label><label><input checked={query.half === "後半"} name="half" type="radio" value="後半" onChange={() => setQuery({ ...query, half: "後半" })} />後半</label></fieldset>
+      <label className="analysis-rainfall-station">降水地点<select value={rainfallStation} onChange={(event) => setRainfallStation(event.target.value as RainfallStation)}><option value="yuasa">湯浅</option><option value="kawabe">川辺</option></select></label>
     </section>
     <section className="analysis-results" aria-label="定期調査一覧">
       {orchardMasterWarning && <p className="analysis-master-warning" role="status">{orchardMasterWarning}</p>}
       {predictionError && <p className="analysis-prediction-error" role="status">{predictionError}</p>}
+      {weatherWarning && <p className="analysis-weather-warning" role="status">{weatherWarning}</p>}
       <div className="analysis-result-summary"><span>検索結果</span><strong>{total}件</strong>{groups.length > 0 && <small>（{groups[0].year}〜{groups[groups.length - 1].year}年）</small>}<button type="button" onClick={() => setShowColumnPicker(!showColumnPicker)}>表示項目</button></div>
       {showColumnPicker && <div className="analysis-column-picker" aria-label="表示項目">
         {(Object.keys(columns) as ColumnKey[]).map((column) => <label key={column}><input checked={visible[column]} type="checkbox" onChange={() => setVisible({ ...visible, [column]: !visible[column] })} />{columns[column].label}</label>)}
-        <label className="analysis-future-option"><input disabled type="checkbox" />30日降水量</label><label className="analysis-future-option"><input disabled type="checkbox" />30日平均気温</label>
       </div>}
       {dataError ? <p className="analysis-empty">{dataError}</p> : groups.length === 0 ? <p className="analysis-empty">条件に一致する調査データはありません。</p> : groups.map((group) => {
         const expanded = expandedYears.has(group.year);
@@ -116,7 +130,7 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
           {expanded && <div className="analysis-table-scroll" aria-label={`${group.year}年の調査結果。表を横にスクロールできます。`}>
             <div className="analysis-table" style={{ minWidth: `${tableWidth}px` }}>
               <div className="analysis-column-headings"><div className="analysis-identity"><span>日付</span><span>園地</span></div><div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>{visibleColumns.map((column) => <span key={column}>{columns[column].label}</span>)}</div></div>
-              {group.rows.map((record) => <AnalysisRow key={record.registrationId} record={record} visibleColumns={visibleColumns} />)}
+              {group.rows.map((record) => <AnalysisRow context={columnContext} key={record.registrationId} record={record} visibleColumns={visibleColumns} />)}
             </div>
           </div>}
         </section>;

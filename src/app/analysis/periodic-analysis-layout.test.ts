@@ -16,4 +16,16 @@ describe("periodic analysis table layout", () => {
     expect(stylesheet).toMatch(/\.analysis-table-scroll\s*\{[^}]*max-width:\s*100%/);
     expect(stylesheet).toMatch(/\.analysis-identity\s*\{[^}]*position:\s*sticky[^}]*left:\s*0/);
   });
+
+  it("keeps the column headings in normal table flow instead of pushing them over data rows", () => {
+    expect(stylesheet).toMatch(/\.analysis-column-headings\s*\{[^}]*position:\s*relative/);
+    expect(stylesheet).not.toMatch(/\.analysis-column-headings\s*\{[^}]*top:\s*140px/);
+  });
+
+  it("offers selectable Yuasa and Kawabe rainfall stations", () => {
+    expect(component).toContain("降水地点");
+    expect(component).toContain('<option value="yuasa">湯浅</option>');
+    expect(component).toContain('<option value="kawabe">川辺</option>');
+    expect(component).not.toContain("analysis-future-option");
+  });
 });

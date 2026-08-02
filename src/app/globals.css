@@ -53,6 +53,7 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .analysis-filters legend { float: left; margin-right: 12px; color: #415245; font-size: .72rem; font-weight: 700; }
 .analysis-filters fieldset label { display: flex; align-items: center; gap: 3px; }
 .analysis-filters input { margin: 0; accent-color: #1f4d2b; }
+.analysis-filters > .analysis-rainfall-station { grid-column: 1 / -1; grid-template-columns: 78px minmax(0, 140px); align-items: center; }
 .analysis-results { padding: 0 0 24px; }
 .analysis-result-summary { display: flex; align-items: baseline; gap: 6px; min-height: 34px; padding: 8px 12px; border-bottom: 1px solid #d2dbd2; background: #fff; font-size: .82rem; }
 .analysis-result-summary span { color: #536157; font-size: .72rem; font-weight: 700; }
@@ -69,7 +70,7 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .analysis-table-scroll { max-width: 100%; overflow-x: auto; overflow-y: visible; border-bottom: 1px solid #d2dbd2; background: #fff; scrollbar-width: thin; }
 .analysis-table { background: #fff; }
 .analysis-column-headings, .analysis-row { display: flex; min-width: 0; height: 37px; border-bottom: 1px solid #e0e6e0; }
-.analysis-column-headings { position: sticky; top: 140px; z-index: 9; height: 30px; background: #f8faf7; color: #536157; font-size: .68rem; font-weight: 800; }
+.analysis-column-headings { position: relative; z-index: 9; height: 30px; background: #f8faf7; color: #536157; font-size: .68rem; font-weight: 800; }
 .analysis-identity { position: sticky; left: 0; z-index: 2; display: grid; grid-template-columns: 41px 84px; flex: 0 0 125px; width: 125px; align-items: center; overflow: hidden; border-right: 1px solid #ced8cf; background: inherit; box-shadow: 2px 0 3px rgb(31 47 36 / 8%); }
 .analysis-identity span { overflow: hidden; padding: 0 4px; text-overflow: ellipsis; white-space: nowrap; }
 .analysis-identity span:first-child { padding-left: 8px; font-variant-numeric: tabular-nums; }
@@ -80,6 +81,7 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .analysis-values .analysis-negative { color: #a33a2b; font-weight: 800; }
 .analysis-values .analysis-neutral { color: #455249; font-weight: 800; }
 .analysis-prediction-error { margin: 0; border-bottom: 1px solid #e0c8a8; padding: 10px 12px; background: #fff8e9; color: #68491e; font-size: .8rem; line-height: 1.5; }
+.analysis-weather-warning { margin: 0; border-bottom: 1px solid #c9d6de; padding: 10px 12px; background: #f2f7fa; color: #294b5c; font-size: .8rem; line-height: 1.5; }
 .analysis-master-warning, .orchard-master-warning, .comparison-master-warning { margin: 0; border-bottom: 1px solid #e0c8a8; padding: 10px 12px; background: #fff8e9; color: #68491e; font-size: .8rem; line-height: 1.5; }
 .analysis-row:nth-child(even) { background: #fbfcfa; }
 .analysis-row:hover { background: #f2f7f1; }
