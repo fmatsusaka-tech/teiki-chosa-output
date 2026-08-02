@@ -17,9 +17,9 @@ const displayPrediction = (result: PredictionMetricResult | undefined, digits: n
   if (!result) return "—";
   return result.ok ? result.predictedValue.toFixed(digits) : `— ${result.message}`;
 };
-const displayDate = (value: string): string => {
+const displayDay = (value: string): string => {
   const match = /^\d{4}-(\d{2})-(\d{2})$/.exec(value);
-  return match ? `${Number(match[1])}/${Number(match[2])}` : "—";
+  return match ? `${Number(match[2])}日` : "—";
 };
 
 type ColumnKey = "diameter" | "diameterDifference" | "diameterPrediction"
@@ -63,7 +63,7 @@ const initialColumns = Object.fromEntries(
 const AnalysisRow = ({ context, record, visibleColumns }: { context: ColumnContext; record: PeriodicAnalysisRow; visibleColumns: ColumnKey[] }) => (
   <div className="analysis-row">
     <div className="analysis-identity" title={`${record.orchard ?? "—"}${record.treatment ? `／${record.treatment}` : ""}${record.originalOrchard && record.originalOrchard !== record.orchard ? `（Input: ${record.originalOrchard}）` : ""}`}>
-      <span>{displayDate(record.measuredAt)}</span><span>{record.orchard ? `${record.orchard}${record.treatment ? `／${record.treatment}` : ""}` : "—"}</span>
+      <span title={record.measuredAt}>{displayDay(record.measuredAt)}</span><span>{record.orchard ? `${record.orchard}${record.treatment ? `／${record.treatment}` : ""}` : "—"}</span>
     </div>
     <div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>
         {visibleColumns.map((column) => {
