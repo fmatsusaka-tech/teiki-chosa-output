@@ -20,6 +20,7 @@ describe("periodic analysis table layout", () => {
   it("keeps the column headings in normal table flow instead of pushing them over data rows", () => {
     expect(stylesheet).toMatch(/\.analysis-column-headings\s*\{[^}]*position:\s*relative/);
     expect(stylesheet).not.toMatch(/\.analysis-column-headings\s*\{[^}]*top:\s*140px/);
+    expect(stylesheet).not.toMatch(/\.analysis-column-headings\s*\{[^}]*top:/);
   });
 
   it("offers selectable Yuasa and Kawabe rainfall stations", () => {

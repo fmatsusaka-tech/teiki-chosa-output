@@ -92,7 +92,6 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
   .analysis-filters { --filter-columns: 250px 90px; grid-template-columns: var(--filter-columns) 90px auto; align-items: end; padding-inline: 0; }
   .analysis-filters fieldset { grid-column: auto; height: 35px; }
   .analysis-year { --year-top: 70px; }
-  .analysis-column-headings { top: 106px; }
   .analysis-year-heading { padding-inline: 12px; }
 }
 
