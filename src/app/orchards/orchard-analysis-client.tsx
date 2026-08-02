@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { buildOrchardAnalysis, getOrchardAnalysisFilterOptions, getOrchardFilterOptions } from "../../features/orchard-analysis/orchard-analysis";
@@ -46,7 +47,7 @@ export function OrchardAnalysisClient({ dataError, orchardMasterWarning, records
   const changeTreatment = (treatmentKey: string) => setQuery({ ...query, treatment: JSON.parse(treatmentKey) as string | null });
 
   return <main className="orchard-page">
-    <header className="orchard-title"><p className="eyebrow">ORCHARDS</p><h1>園地分析</h1><p>1回の調査を1行として表示する時系列カルテです。</p><a className="orchard-compare-link" href="/orchards/compare">2園地を比較する →</a></header>
+    <header className="orchard-title"><Link className="home-link" href="/">← ホーム</Link><p className="eyebrow">ORCHARDS</p><h1>園地分析</h1><p>1回の調査を1行として表示する時系列カルテです。</p><a className="orchard-compare-link" href="/orchards/compare">2園地を比較する →</a></header>
     <section className="orchard-filters" aria-label="園地分析の検索条件">
       <label>品種<select value={query.varietyCategory} onChange={(event) => changeVarietyCategory(event.target.value)}>{varietyCategories.map((variety) => <option key={variety} value={variety}>{variety}</option>)}</select></label>
       <label>園地<select value={query.orchard} onChange={(event) => changeOrchard(event.target.value)}>{orchardOptions.map((option) => <option key={option.orchard} value={option.orchard}>{option.label}</option>)}</select></label>

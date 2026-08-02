@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PredictionDashboard } from "./prediction-dashboard";
 import { loadPredictionPageData } from "../../server/prediction-data/prediction-page-data";
 
@@ -16,6 +17,6 @@ export default async function PredictionsPage({ searchParams }: { searchParams: 
     }} />;
   } catch (error) {
     console.error("Failed to load prediction data", error);
-    return <main className="prediction-page"><header className="prediction-title"><p className="eyebrow">PREDICTION</p><h1>各種予測システム</h1></header><p className="prediction-error">予測マスタを取得できませんでした。接続設定とデータ版を確認してください。</p></main>;
+    return <main className="prediction-page"><header className="prediction-title"><Link className="home-link" href="/">← ホーム</Link><p className="eyebrow">PREDICTION</p><h1>各種予測システム</h1></header><p className="prediction-error">予測マスタを取得できませんでした。接続設定とデータ版を確認してください。</p></main>;
   }
 }
