@@ -1,7 +1,7 @@
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { isIncludedInAnalysis } from "../../contracts/analysis-data";
 import { getVarietyCategory } from "../shared/variety-category";
-import type { OrchardAnalysisFilterOptions, OrchardAnalysisQuery, OrchardAnalysisRow, OrchardAnalysisTimelineEntry } from "./orchard-analysis.types";
+import type { OrchardAnalysisFilterOptions, OrchardAnalysisQuery, OrchardAnalysisRow, OrchardAnalysisTimelineEntry, OrchardComparison, OrchardComparisonRecord, OrchardComparisonSelection } from "./orchard-analysis.types";
 
 type DatedRecord = {
   record: AnalysisDataRecord;
@@ -90,4 +90,67 @@ export const buildOrchardAnalysis = (
     entries.push({ type: "record", row: toRow(record) });
     return entries;
   });
+};
+
+const toComparisonRecord = (record: AnalysisDataRecord): OrchardComparisonRecord => ({
+  registrationId: record.id,
+  measuredAt: record.measuredAt!,
+  registeredAt: record.registeredAt,
+  treatment: record.treatment,
+  averageDiameter: record.averageDiameter,
+  minimumDiameter: record.minimumDiameter,
+  maximumDiameter: record.maximumDiameter,
+  brix: record.brix,
+  acidity: record.acidity,
+  brixAcidityRatio: record.brixAcidityRatio,
+});
+
+const comparisonRecords = (
+  records: readonly AnalysisDataRecord[],
+  selection: OrchardComparisonSelection,
+): OrchardComparisonRecord[] => records
+  .filter((record) => isEligible(record)
+    && record.orchard === selection.orchard
+    && getVarietyCategory(record.variety) === selection.varietyCategory
+    && (selection.treatment === undefined || record.treatment === selection.treatment))
+  .map(toComparisonRecord)
+  .sort((left, right) => left.measuredAt.localeCompare(right.measuredAt)
+    || (left.registeredAt ?? "").localeCompare(right.registeredAt ?? "")
+    || left.registrationId.localeCompare(right.registrationId));
+
+/**
+ * Builds exact-date comparison columns. Records on nearby dates are never
+ * paired. Multiple records on the same date remain separate, in stable order.
+ */
+export const buildOrchardComparison = (
+  records: readonly AnalysisDataRecord[],
+  orchardA: OrchardComparisonSelection,
+  orchardB: OrchardComparisonSelection,
+): OrchardComparison => {
+  const a = comparisonRecords(records, orchardA);
+  const b = comparisonRecords(records, orchardB);
+  const dates = [...new Set([...a.map((row) => row.measuredAt), ...b.map((row) => row.measuredAt)])].sort();
+  let previousYear: string | null = null;
+  const columns = dates.flatMap((measuredAt) => {
+    const rowsA = a.filter((row) => row.measuredAt === measuredAt);
+    const rowsB = b.filter((row) => row.measuredAt === measuredAt);
+    const count = Math.max(rowsA.length, rowsB.length);
+    return Array.from({ length: count }, (_, index) => {
+      const year = measuredAt.slice(0, 4);
+      const yearBoundary = year !== previousYear;
+      previousYear = year;
+      return {
+        key: `${measuredAt}-${index}`,
+        measuredAt,
+        yearBoundary,
+        orchardA: rowsA[index] ?? null,
+        orchardB: rowsB[index] ?? null,
+      };
+    });
+  });
+  return {
+    columns,
+    latestA: a.at(-1) ?? null,
+    latestB: b.at(-1) ?? null,
+  };
 };

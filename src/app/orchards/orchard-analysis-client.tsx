@@ -45,7 +45,7 @@ export function OrchardAnalysisClient({ dataError, records }: { dataError: strin
   const changeVarietyCategory = (varietyCategory: string) => { setQuery({ ...query, varietyCategory }); setTreatmentSelection(allTreatments); };
 
   return <main className="orchard-page">
-    <header className="orchard-title"><p className="eyebrow">ORCHARDS</p><h1>園地分析</h1><p>1回の調査を1行として表示する時系列カルテです。</p></header>
+    <header className="orchard-title"><p className="eyebrow">ORCHARDS</p><h1>園地分析</h1><p>1回の調査を1行として表示する時系列カルテです。</p><a className="orchard-compare-link" href="/orchards/compare">2園地を比較する →</a></header>
     <section className="orchard-filters" aria-label="園地分析の検索条件">
       <label>園地<select value={query.orchard} onChange={(event) => changeOrchard(event.target.value)}>{initialOptions.orchards.map((orchard) => <option key={orchard} value={orchard}>{orchard}</option>)}</select></label>
       <label>品種<select value={query.varietyCategory} onChange={(event) => changeVarietyCategory(event.target.value)}>{varietyCategories.map((variety) => <option key={variety} value={variety}>{variety}</option>)}</select></label>
