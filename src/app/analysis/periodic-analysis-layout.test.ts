@@ -53,4 +53,18 @@ describe("periodic analysis table layout", () => {
     expect(component).toContain('return match ? `${Number(match[2])}日` : "—"');
     expect(component).toContain("<span title={record.measuredAt}>{displayDay(record.measuredAt)}</span>");
   });
+
+  it("places detailed diameter columns after the weather columns", () => {
+    const averageIndex = component.indexOf('diameter: { label: "平均横径"');
+    const brixIndex = component.indexOf('brix: { label: "糖度"');
+    const rainfallIndex = component.indexOf('rainfall30Days: { label: "30日降水量"');
+    const temperatureIndex = component.indexOf('temperature30Days: { label: "30日平均気温"');
+    const minimumIndex = component.indexOf('minimumDiameter: { label: "最小横径"');
+    const maximumIndex = component.indexOf('maximumDiameter: { label: "最大横径"');
+
+    expect(averageIndex).toBeLessThan(brixIndex);
+    expect(rainfallIndex).toBeLessThan(temperatureIndex);
+    expect(temperatureIndex).toBeLessThan(minimumIndex);
+    expect(minimumIndex).toBeLessThan(maximumIndex);
+  });
 });
