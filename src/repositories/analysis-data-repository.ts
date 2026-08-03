@@ -33,7 +33,26 @@ export class AnalysisDataRepository {
     }
 
     const headerIndexes = this.resolveHeaderIndexes(headers);
-    return dataRows.map((row, index) => this.toRecord(row, headerIndexes, index + 2));
+    const records: AnalysisDataRecord[] = [];
+    let firstError: Error | null = null;
+    let skippedCount = 0;
+    dataRows.forEach((row, index) => {
+      try {
+        records.push(this.toRecord(row, headerIndexes, index + 2));
+      } catch (error) {
+        skippedCount += 1;
+        firstError ??= error instanceof Error ? error : new Error(String(error));
+        console.error("調査データの行を読み飛ばしました。", error);
+      }
+    });
+
+    if (records.length === 0) {
+      throw firstError ?? new AnalysisDataError("INVALID_RESPONSE", "調査データタブの行を読み込めませんでした。");
+    }
+    if (skippedCount > 0) {
+      console.error(`調査データの${skippedCount}行を不正な値のため読み飛ばしました。`);
+    }
+    return records;
   }
 
   async getStandardRecords(options?: AnalysisInclusionOptions): Promise<AnalysisDataRecord[]> {

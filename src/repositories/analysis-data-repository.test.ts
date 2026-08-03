@@ -340,6 +340,28 @@ describe("AnalysisDataRepository", () => {
     await expect(repository.getAll()).resolves.toHaveLength(2);
   });
 
+  it("skips a row with an invalid value and still returns the other valid rows", async () => {
+    const good1: Record<string, unknown> = { ...recordValues, 登録ID: "good-1" };
+    const bad: Record<string, unknown> = { ...recordValues, 登録ID: "bad", 計測日: "not-a-date" };
+    const good2: Record<string, unknown> = { ...recordValues, 登録ID: "good-2" };
+    const rows = [headers, ...[good1, bad, good2].map((values) => headers.map((header) => values[header]))];
+
+    const records = await new AnalysisDataRepository(source(rows)).getAll();
+
+    expect(records.map((record) => record.id)).toEqual(["good-1", "good-2"]);
+  });
+
+  it("throws the first row error when every row is invalid", async () => {
+    const badDate: Record<string, unknown> = { ...recordValues, 登録ID: "bad-date", 計測日: "not-a-date" };
+    const badNumber: Record<string, unknown> = { ...recordValues, 登録ID: "bad-number", 横径平均: "invalid" };
+    const rows = [headers, ...[badDate, badNumber].map((values) => headers.map((header) => values[header]))];
+
+    await expect(new AnalysisDataRepository(source(rows)).getAll()).rejects.toMatchObject({
+      name: "AnalysisDataError",
+      code: "INVALID_MEASURED_AT",
+    });
+  });
+
   it("excludes only rows explicitly marked 無効 from enabled records", async () => {
     const enabled: Record<string, unknown> = { ...recordValues, 登録ID: "enabled", 有効状態: "有効" };
     const blank: Record<string, unknown> = { ...recordValues, 登録ID: "blank", 有効状態: "" };
