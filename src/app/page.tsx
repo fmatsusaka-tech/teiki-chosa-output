@@ -4,22 +4,22 @@ const features = [
   {
     href: "/analysis",
     title: "定期調査分析",
-    description: "園地・品種・処理区・年度・調査区分で、横径・糖度・酸度の推移を確認します。",
+    description: "定期調査の結果を横断的に分析します。",
   },
   {
     href: "/orchards",
     title: "園地分析",
-    description: "園地・品種・処理区を選び、調査データを時系列で確認します。",
+    description: "園地のデータを時系列に分析します。",
   },
   {
     href: "/predictions",
     title: "各種予測システム",
-    description: "自由な仮定日と仮定値から、横径、糖度、クエン酸を試算します。",
+    description: "横径、糖度、クエン酸を自由に設定して試算できます。",
   },
   {
     href: "/data-management",
     title: "データ管理",
-    description: "Outputで利用する読取データの検索・確認を行います。",
+    description: "自分が入力したデータの確認と修正申請を行えます。",
   },
 ];
 
