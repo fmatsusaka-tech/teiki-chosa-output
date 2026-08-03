@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { buildOrchardAnalysis, buildOrchardComparison, getOrchardAnalysisFilterOptions, getOrchardFilterOptions, getOrchardSelectionOptions } from "./orchard-analysis";
+import { buildOrchardAnalysis, buildOrchardComparison, getOrchardAnalysisFilterOptions, getOrchardFilterOptions, getOrchardSelectionOptions, normalizeTreatment } from "./orchard-analysis";
 
 const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => ({
   id: "id-1", registeredAt: null, measuredAt: "2026-07-01", fiscalYear: 2026, year: 2026, month: 7,
@@ -118,8 +118,38 @@ describe("buildOrchardAnalysis", () => {
     ];
 
     expect(getOrchardAnalysisFilterOptions(records).orchards).toEqual(["吉川", "別園地"]);
-    expect(getOrchardAnalysisFilterOptions(records, "吉川").varietyCategories).toEqual(["ゆら早生", "早生(宮川・興津 等、又は山下紅)"]);
+    expect(getOrchardAnalysisFilterOptions(records, "吉川").varietyCategories).toEqual(["早生(宮川・興津 等、又は山下紅)", "ゆら早生"]);
     expect(getOrchardAnalysisFilterOptions(records, "吉川", "早生(宮川・興津 等、又は山下紅)").treatments).toEqual(["B", "C"]);
+  });
+
+  it("品種候補をデータ件数が多い順に並べ、同数は五十音順にする", () => {
+    const records = [
+      record({ id: "yura-1", orchard: "吉川", variety: "ゆら早生" }),
+      record({ id: "yura-2", orchard: "吉川", variety: "ゆら早生" }),
+      record({ id: "taguchi-1", orchard: "吉川", variety: "田口" }),
+      record({ id: "tanryu-1", orchard: "吉川", variety: "丹生系" }),
+    ];
+
+    expect(getOrchardAnalysisFilterOptions(records).varietyCategories).toEqual(["ゆら早生", "丹生系", "田口"]);
+  });
+
+  it("無処理区・処理区なし・処理区の空欄を同一データとして扱う", () => {
+    const records = [
+      record({ id: "blank", treatment: null }),
+      record({ id: "muishori", treatment: "無処理区" }),
+      record({ id: "nashi", treatment: "処理区なし" }),
+    ];
+
+    expect(normalizeTreatment(null)).toBeNull();
+    expect(normalizeTreatment("無処理区")).toBeNull();
+    expect(normalizeTreatment("処理区なし")).toBeNull();
+    expect(normalizeTreatment("処理1")).toBe("処理1");
+
+    expect(getOrchardAnalysisFilterOptions(records, "吉川", "ゆら早生").treatments).toEqual([null]);
+    expect(getOrchardSelectionOptions(records).map((option) => option.treatment)).toEqual([null]);
+
+    const timeline = buildOrchardAnalysis(records, { orchard: "吉川", varietyCategory: "ゆら早生", treatment: null });
+    expect(timeline.filter((entry) => entry.type === "record")).toHaveLength(3);
   });
 
   it("園地・品種で絞り込み、最新日付順に1調査を1行として返す", () => {

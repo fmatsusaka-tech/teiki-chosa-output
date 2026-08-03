@@ -11,6 +11,7 @@ import type { PredictionMetricResult, PredictionRecordResult } from "../../featu
 import { aggregateWeather30Days, type DailyWeatherRecord, type WeatherMetricOutcome } from "../../features/weather/weather-30-day";
 
 const fallbackCategories = ["ゆら早生", "早生(宮川・興津 等、又は山下紅)", "田口", "中生(向山など)", "晩生", "丹生系"];
+const fiscalMonthOrder = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
 
 const displayNumber = (value: number | null, digits: number): string => value === null ? "—" : value.toFixed(digits);
 const displayPrediction = (result: PredictionMetricResult | undefined, digits: number): string => {
@@ -123,7 +124,7 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
     <header className="analysis-title"><Link className="home-link" href="/">← ホーム</Link><p className="eyebrow">ANALYSIS</p><h1>定期調査分析</h1></header>
     <section className="analysis-filters" aria-label="検索条件">
       <label>品種<select value={query.varietyCategory} onChange={(event) => setQuery({ ...query, varietyCategory: event.target.value })}>{categoryOptions.map((category) => <option key={category}>{category}</option>)}</select></label>
-      <label>月<select value={query.month} onChange={(event) => setQuery({ ...query, month: Number(event.target.value) })}>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}月</option>)}</select></label>
+      <label>月<select value={query.month} onChange={(event) => setQuery({ ...query, month: Number(event.target.value) })}>{fiscalMonthOrder.map((month) => <option key={month} value={month}>{month}月</option>)}</select></label>
       <fieldset><legend>区分</legend><label><input checked={query.half === "前半"} name="half" type="radio" value="前半" onChange={() => setQuery({ ...query, half: "前半" })} />前半</label><label><input checked={query.half === "後半"} name="half" type="radio" value="後半" onChange={() => setQuery({ ...query, half: "後半" })} />後半</label></fieldset>
       <label className="analysis-rainfall-station">降水地点<select value={rainfallStation} onChange={(event) => setRainfallStation(event.target.value as RainfallStation)}><option value="yuasa">湯浅</option><option value="kawabe">川辺</option></select></label>
     </section>
