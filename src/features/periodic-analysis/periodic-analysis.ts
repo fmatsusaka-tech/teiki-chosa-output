@@ -71,7 +71,7 @@ const previousDifference = (current: PreparedRecord, candidates: readonly Prepar
   const priorCandidates = candidates
     .filter((candidate) => candidate.record.year === current.record.year
       && candidate.record.orchard === current.record.orchard
-      && candidate.record.variety === current.record.variety
+      && candidate.varietyCategory === current.varietyCategory
       && candidate.record.treatment === current.record.treatment
       && periodRank(candidate) < currentRank);
   if (priorCandidates.length === 0) {

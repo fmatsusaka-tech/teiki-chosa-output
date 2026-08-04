@@ -90,6 +90,14 @@ describe("buildPeriodicAnalysis", () => {
     });
   });
 
+  it("matches the previous record by variety category, not the raw 品種 text, when they are spelling variants", () => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-01", surveyMonth: "2026-08", surveyPeriod: "前半", variety: "ゆら", averageDiameter: 52 }),
+      record({ id: "previous", measuredAt: "2026-07-20", surveyMonth: "2026-07", surveyPeriod: "後半", variety: "ゆら早生", averageDiameter: 50 }),
+    ];
+    expect(buildPeriodicAnalysis(records, { ...query, varietyCategory: "ゆら早生" })[0].rows[0].previousDifference.diameterAverage).toBe(2);
+  });
+
   it("does not mix a different treatment after orchard normalization", () => {
     const records = [
       record({ id: "current", measuredAt: "2026-08-15", orchard: "12号", treatment: "無処理", averageDiameter: 52 }),
