@@ -1,5 +1,6 @@
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { isIncludedInAnalysis } from "../../contracts/analysis-data";
+import { normalizeTreatment } from "../shared/treatment";
 import { getVarietyCategory } from "../shared/variety-category";
 import type { OrchardAnalysisFilterOptions, OrchardAnalysisQuery, OrchardAnalysisRow, OrchardAnalysisTimelineEntry, OrchardComparison, OrchardComparisonRecord, OrchardComparisonSelection, OrchardFilterOption, OrchardSelectionOption } from "./orchard-analysis.types";
 
@@ -39,15 +40,6 @@ const isEligibleSelection = (record: AnalysisDataRecord): boolean =>
   record.orchard !== null
   && getVarietyCategory(record.variety) !== null
   && isIncludedInAnalysis(record);
-
-const blankTreatmentLabels = new Set(["無処理区", "処理区なし"]);
-
-/** Treats blank, "無処理区", and "処理区なし" as the same absence of a treatment. */
-export const normalizeTreatment = (treatment: string | null): string | null => {
-  if (treatment === null) return null;
-  const trimmed = treatment.trim();
-  return trimmed === "" || blankTreatmentLabels.has(trimmed) ? null : treatment;
-};
 
 /** Returns cascading search candidates from records that can appear in analysis. */
 export const getOrchardAnalysisFilterOptions = (

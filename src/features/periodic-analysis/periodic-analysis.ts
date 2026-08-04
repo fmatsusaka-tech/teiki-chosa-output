@@ -1,5 +1,6 @@
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { isIncludedInAnalysis } from "../../contracts/analysis-data";
+import { normalizeTreatment } from "../shared/treatment";
 import { getVarietyCategory } from "../shared/variety-category";
 import type { PeriodicAnalysisQuery, PeriodicAnalysisRow, PeriodicAnalysisYearGroup, PreviousDifference } from "./periodic-analysis.types";
 import type { PredictionRecordResult } from "../prediction-integration/prediction-integration.types";
@@ -72,7 +73,7 @@ const previousDifference = (current: PreparedRecord, candidates: readonly Prepar
     .filter((candidate) => candidate.record.year === current.record.year
       && candidate.record.orchard === current.record.orchard
       && candidate.varietyCategory === current.varietyCategory
-      && candidate.record.treatment === current.record.treatment
+      && normalizeTreatment(candidate.record.treatment) === normalizeTreatment(current.record.treatment)
       && periodRank(candidate) < currentRank);
   if (priorCandidates.length === 0) {
     return empty();
