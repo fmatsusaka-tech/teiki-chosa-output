@@ -84,7 +84,9 @@ export const applyOrchardNameMaster = (
       ...record,
       originalOrchard: record.orchard,
       orchard: useMapping ? mapping.officialOrchard : record.orchard,
-      treatment: useMapping ? mapping.treatment : record.treatment,
+      // 1つの園地に多数の処理区が実在するため、レコード自身の処理区を常に優先する。
+      // マスタの処理区はレコード側が空欄のときの補完としてのみ使う。
+      treatment: record.treatment ?? (useMapping ? mapping.treatment : null),
     };
   });
 };
