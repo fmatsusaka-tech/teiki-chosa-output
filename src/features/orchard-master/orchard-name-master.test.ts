@@ -30,10 +30,27 @@ describe("decodeOrchardNameMaster", () => {
 });
 
 describe("applyOrchardNameMaster", () => {
-  it("applies only confirmed mappings and preserves the input object", () => {
+  it("applies the confirmed orchard name and preserves the input object", () => {
     const before = structuredClone(record);
     const [result] = applyOrchardNameMaster([record], decodeOrchardNameMaster([orchardNameMasterHeaders, row({ 8: "12号", 9: "無処理" })]));
-    expect(result).toMatchObject({ orchard: "12号", treatment: "無処理", originalOrchard: "１２号無処理" });
+    expect(result).toMatchObject({ orchard: "12号", originalOrchard: "１２号無処理" });
     expect(record).toEqual(before);
+  });
+
+  it("keeps the record's own treatment even when a confirmed mapping has a different one (one orchard can have many real treatments)", () => {
+    const [result] = applyOrchardNameMaster([record], decodeOrchardNameMaster([orchardNameMasterHeaders, row({ 8: "12号", 9: "無処理" })]));
+    expect(result.treatment).toBe("Input処理");
+  });
+
+  it("falls back to the mapping's treatment only when the record's own treatment is blank", () => {
+    const blankTreatmentRecord = { orchard: "１２号無処理", treatment: null } as AnalysisDataRecord;
+    const [result] = applyOrchardNameMaster([blankTreatmentRecord], decodeOrchardNameMaster([orchardNameMasterHeaders, row({ 8: "12号", 9: "無処理" })]));
+    expect(result.treatment).toBe("無処理");
+  });
+
+  it("keeps a blank treatment blank when neither the record nor the mapping has one", () => {
+    const blankTreatmentRecord = { orchard: "１２号無処理", treatment: null } as AnalysisDataRecord;
+    const [result] = applyOrchardNameMaster([blankTreatmentRecord], decodeOrchardNameMaster([orchardNameMasterHeaders, row({ 3: "", 8: "12号" })]));
+    expect(result.treatment).toBeNull();
   });
 });
