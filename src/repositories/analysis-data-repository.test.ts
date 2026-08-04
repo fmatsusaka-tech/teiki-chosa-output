@@ -55,6 +55,18 @@ describe("AnalysisDataRepository", () => {
     })]);
   });
 
+  it.each([
+    [1, "1"],
+    [0, "0"],
+    [true, "true"],
+    [false, "false"],
+  ])("stringifies free-text columns that Sheets returns as numberValue/boolValue (%s)", async (notes, expected) => {
+    const values = { ...recordValues, 備考: notes };
+    const [parsed] = await new AnalysisDataRepository(source(table(headers, values))).getAll();
+
+    expect(parsed.notes).toBe(expected);
+  });
+
   it("preserves missing observations and converts Google Sheets date serial values", async () => {
     const values = {
       ...recordValues,
