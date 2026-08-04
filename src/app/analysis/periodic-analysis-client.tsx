@@ -67,7 +67,14 @@ const AnalysisRow = ({ context, record, visibleColumns }: { context: ColumnConte
   <div className="analysis-row">
     <div className="analysis-identity" title={`${record.orchard ?? "—"}${record.treatment ? `／${record.treatment}` : ""}${record.originalOrchard && record.originalOrchard !== record.orchard ? `（Input: ${record.originalOrchard}）` : ""}`}>
       <span title={record.measuredAt}>{displayDay(record.measuredAt)}</span>
-      <span>{record.orchard ?? "—"}{record.treatment && <span className="analysis-treatment">／{record.treatment}</span>}</span>
+      {record.treatment ? (
+        <div className="analysis-orchard-stack">
+          <span className="analysis-orchard-name">{record.orchard ?? "—"}</span>
+          <span className="analysis-treatment">{record.treatment}</span>
+        </div>
+      ) : (
+        <span>{record.orchard ?? "—"}</span>
+      )}
     </div>
     <div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>
         {visibleColumns.map((column) => {
