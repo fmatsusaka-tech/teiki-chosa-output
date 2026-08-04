@@ -51,6 +51,10 @@ const compareNewestFirst = (left: PreparedRecord, right: PreparedRecord): number
   || right.registeredTimestamp - left.registeredTimestamp
   || left.record.id.localeCompare(right.record.id);
 
+/** Orderable position of a 調査基準月＋調査区分 pair. Ignores 計測日 entirely. */
+const periodRank = (item: PreparedRecord): number =>
+  item.periodYear * 200 + item.periodMonth * 10 + (item.record.surveyPeriod === "前半" ? 0 : 1);
+
 const previousDifference = (current: PreparedRecord, candidates: readonly PreparedRecord[]): PreviousDifference => {
   const empty = (): PreviousDifference => ({
     diameterAverage: null,
@@ -63,19 +67,18 @@ const previousDifference = (current: PreparedRecord, candidates: readonly Prepar
   if (!current.record.orchard || !current.record.variety) {
     return empty();
   }
+  const currentRank = periodRank(current);
   const priorCandidates = candidates
     .filter((candidate) => candidate.record.year === current.record.year
       && candidate.record.orchard === current.record.orchard
       && candidate.record.variety === current.record.variety
       && candidate.record.treatment === current.record.treatment
-      && (candidate.record.surveyMonth !== current.record.surveyMonth
-        || candidate.record.surveyPeriod !== current.record.surveyPeriod)
-      && candidate.measuredTimestamp < current.measuredTimestamp);
+      && periodRank(candidate) < currentRank);
   if (priorCandidates.length === 0) {
     return empty();
   }
-  const previousTimestamp = Math.max(...priorCandidates.map((candidate) => candidate.measuredTimestamp));
-  const previousCandidates = priorCandidates.filter((candidate) => candidate.measuredTimestamp === previousTimestamp);
+  const previousRank = Math.max(...priorCandidates.map(periodRank));
+  const previousCandidates = priorCandidates.filter((candidate) => periodRank(candidate) === previousRank);
   if (previousCandidates.length !== 1) {
     return empty();
   }

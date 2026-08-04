@@ -108,6 +108,24 @@ describe("buildPeriodicAnalysis", () => {
     expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBeNull();
   });
 
+  it("orders by 調査基準月／調査区分, not by 計測日, even when 計測日 disagrees with the survey period order", () => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-01", surveyMonth: "2026-08", surveyPeriod: "前半", averageDiameter: 52 }),
+      // Measured after "current", but its survey period (7月後半) is still the one immediately before 8月前半.
+      record({ id: "previous", measuredAt: "2026-08-20", surveyMonth: "2026-07", surveyPeriod: "後半", averageDiameter: 50 }),
+    ];
+    expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBe(2);
+  });
+
+  it("does not treat a same-period record on a different 計測日 as the previous record", () => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-15", surveyMonth: "2026-08", surveyPeriod: "前半", averageDiameter: 52 }),
+      record({ id: "same-period-different-day", measuredAt: "2026-08-01", surveyMonth: "2026-08", surveyPeriod: "前半", averageDiameter: 10 }),
+    ];
+    const current = buildPeriodicAnalysis(records, query)[0].rows.find((row) => row.registrationId === "current")!;
+    expect(current.previousDifference.diameterAverage).toBeNull();
+  });
+
   it("does not compare separate records from the same survey round", () => {
     const records = [
       record({ id: "current", measuredAt: "2026-07-25", surveyMonth: "2026-07", surveyPeriod: "後半", averageDiameter: 52 }),
