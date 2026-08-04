@@ -186,6 +186,7 @@ export const createGoogleSheetsPredictionMasterRepository = (
       response = await fetchImpl(url, {
         method: "GET",
         headers: { authorization: `Bearer ${token}` },
+        cache: "no-store",
       });
     } catch {
       throw new PredictionMasterRepositoryError(
