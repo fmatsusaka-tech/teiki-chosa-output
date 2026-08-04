@@ -29,7 +29,8 @@ type ColumnKey = "diameter" | "diameterDifference" | "diameterPrediction"
   | "brix" | "brixDifference" | "brixPrediction"
   | "acidity" | "acidityDifference" | "acidityPrediction"
   | "brixAcidityRatio" | "brixAcidityRatioDifference"
-  | "rainfall30Days" | "temperature30Days";
+  | "rainfall30Days" | "temperature30Days"
+  | "notes";
 
 type RainfallStation = "yuasa" | "kawabe";
 type ColumnContext = { rainfallStation: RainfallStation; weatherRecords: readonly DailyWeatherRecord[] };
@@ -55,6 +56,7 @@ const columns: Record<ColumnKey, { label: string; width: number; tone?: MetricTo
   minimumDiameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterMinimum, 1).text, differenceValue: (record) => record.previousDifference.diameterMinimum },
   maximumDiameter: { label: "最大横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterMaximum, 1) },
   maximumDiameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterMaximum, 1).text, differenceValue: (record) => record.previousDifference.diameterMaximum },
+  notes: { label: "備考", width: 110, value: (record) => record.notes ?? "—" },
 };
 
 const initialColumns = Object.fromEntries(
@@ -64,7 +66,8 @@ const initialColumns = Object.fromEntries(
 const AnalysisRow = ({ context, record, visibleColumns }: { context: ColumnContext; record: PeriodicAnalysisRow; visibleColumns: ColumnKey[] }) => (
   <div className="analysis-row">
     <div className="analysis-identity" title={`${record.orchard ?? "—"}${record.treatment ? `／${record.treatment}` : ""}${record.originalOrchard && record.originalOrchard !== record.orchard ? `（Input: ${record.originalOrchard}）` : ""}`}>
-      <span title={record.measuredAt}>{displayDay(record.measuredAt)}</span><span>{record.orchard ? `${record.orchard}${record.treatment ? `／${record.treatment}` : ""}` : "—"}</span>
+      <span title={record.measuredAt}>{displayDay(record.measuredAt)}</span>
+      <span>{record.orchard ?? "—"}{record.treatment && <span className="analysis-treatment">／{record.treatment}</span>}</span>
     </div>
     <div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>
         {visibleColumns.map((column) => {

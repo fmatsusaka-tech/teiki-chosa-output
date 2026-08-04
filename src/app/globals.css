@@ -93,6 +93,7 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .analysis-row .analysis-identity { background: #fff; }
 .analysis-identity span { overflow: hidden; padding: 0 4px; text-overflow: ellipsis; white-space: nowrap; }
 .analysis-identity span:first-child { padding-left: 8px; font-variant-numeric: tabular-nums; }
+.analysis-treatment { padding: 0; font-size: .68rem; color: #536157; }
 .analysis-values { display: grid; flex: 1 0 auto; height: 100%; align-items: center; font-size: .82rem; font-variant-numeric: tabular-nums; }
 .analysis-values span { overflow: hidden; padding: 0 6px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .analysis-column-headings .analysis-values span { text-align: center; }
