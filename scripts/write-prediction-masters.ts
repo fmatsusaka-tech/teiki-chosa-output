@@ -7,8 +7,6 @@ import { readLegacyPredictionSheets } from "./lib/google-sheets-reader";
 import { createGoogleSheetsWriterProvider } from "./lib/google-sheets-writer";
 
 const sourceSheetTitles = ["横径予測", "糖度予測", "酸度予測"] as const;
-const defaultInputSpreadsheetId =
-  "1Ix7qFigeUvmxkEl3C51rmzuBzYDq7OR_ZGHq6GUKa0g";
 
 const requiredArgument = (name: string): string => {
   const index = process.argv.indexOf(name);
@@ -33,10 +31,13 @@ const main = async (): Promise<void> => {
   if (!sourceSpreadsheetId) {
     throw new Error("PREDICTION_SPREADSHEET_IDが未設定です。");
   }
+  const inputSpreadsheetId = process.env.ANALYSIS_DATA_SPREADSHEET_ID ?? "";
+  if (!inputSpreadsheetId) {
+    throw new Error("ANALYSIS_DATA_SPREADSHEET_IDが未設定です。");
+  }
   const config: PredictionMasterTargetConfig = {
     targetSpreadsheetId: process.env.PREDICTION_MASTER_SPREADSHEET_ID ?? "",
-    inputSpreadsheetId:
-      process.env.ANALYSIS_DATA_SPREADSHEET_ID ?? defaultInputSpreadsheetId,
+    inputSpreadsheetId,
     sourceSpreadsheetId,
   };
   if (!config.targetSpreadsheetId) {
