@@ -132,6 +132,9 @@ export class AnalysisDataRepository {
     if (value === null || value === undefined || value === "") {
       return null;
     }
+    if (typeof value === "number" || typeof value === "boolean") {
+      return String(value);
+    }
     if (typeof value !== "string") {
       throw new Error(`調査データ ${rowNumber}行目の「${header}」を文字列へ変換できません。`);
     }
