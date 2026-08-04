@@ -43,7 +43,7 @@ describe("buildPeriodicAnalysis", () => {
     expect(buildPeriodicAnalysis(records, { ...query, treatment: "" })).toEqual([]);
   });
 
-  it("groups and orders by period year, measured date, registration date, then id", () => {
+  it("groups and orders by period year, measured date, orchard name, registration date, then id", () => {
     const records = [
       record({ id: "b", measuredAt: "2026-08-01", registeredAt: "2026-08-01T10:00:00Z" }),
       record({ id: "a", measuredAt: "2026-08-01", registeredAt: "2026-08-01T10:00:00Z" }),
@@ -53,6 +53,15 @@ describe("buildPeriodicAnalysis", () => {
     const groups = buildPeriodicAnalysis(records, query);
     expect(groups.map((group) => group.year)).toEqual([2026, 2025]);
     expect(groups[0].rows.map((row) => row.registrationId)).toEqual(["later", "a", "b"]);
+  });
+
+  it("sorts same-date rows by orchard name (50音順) ahead of registration date and id", () => {
+    const records = [
+      record({ id: "z-id-but-early-name", orchard: "あいうえお園", measuredAt: "2026-08-01", registeredAt: "2026-08-01T12:00:00Z" }),
+      record({ id: "a-id-but-late-name", orchard: "わをん園", measuredAt: "2026-08-01", registeredAt: "2026-08-01T10:00:00Z" }),
+    ];
+    const rows = buildPeriodicAnalysis(records, query)[0].rows;
+    expect(rows.map((row) => row.registrationId)).toEqual(["z-id-but-early-name", "a-id-but-late-name"]);
   });
 
   it("handles statuses and partial missing observations without dropping the row", () => {

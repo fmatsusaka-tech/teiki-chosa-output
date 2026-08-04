@@ -47,6 +47,7 @@ const prepareRecords = (records: readonly AnalysisDataRecord[], includeNeedsRevi
 const compareNewestFirst = (left: PreparedRecord, right: PreparedRecord): number =>
   right.periodYear - left.periodYear
   || right.measuredTimestamp - left.measuredTimestamp
+  || (left.record.orchard ?? "").localeCompare(right.record.orchard ?? "", "ja")
   || right.registeredTimestamp - left.registeredTimestamp
   || left.record.id.localeCompare(right.record.id);
 
