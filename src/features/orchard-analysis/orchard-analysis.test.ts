@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { buildOrchardAnalysis, buildOrchardComparison, getOrchardAnalysisFilterOptions, getOrchardFilterOptions, getOrchardSelectionOptions, normalizeTreatment } from "./orchard-analysis";
+import { buildOrchardAnalysis, buildOrchardComparison, getOrchardAnalysisFilterOptions, getOrchardFilterOptions, getOrchardSelectionOptions } from "./orchard-analysis";
 
 const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => ({
   id: "id-1", registeredAt: null, measuredAt: "2026-07-01", fiscalYear: 2026, year: 2026, month: 7,
@@ -139,11 +139,6 @@ describe("buildOrchardAnalysis", () => {
       record({ id: "muishori", treatment: "無処理区" }),
       record({ id: "nashi", treatment: "処理区なし" }),
     ];
-
-    expect(normalizeTreatment(null)).toBeNull();
-    expect(normalizeTreatment("無処理区")).toBeNull();
-    expect(normalizeTreatment("処理区なし")).toBeNull();
-    expect(normalizeTreatment("処理1")).toBe("処理1");
 
     expect(getOrchardAnalysisFilterOptions(records, "吉川", "ゆら早生").treatments).toEqual([null]);
     expect(getOrchardSelectionOptions(records).map((option) => option.treatment)).toEqual([null]);

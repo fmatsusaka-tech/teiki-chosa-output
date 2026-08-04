@@ -175,6 +175,18 @@ describe("buildPeriodicAnalysis", () => {
     expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBeNull();
   });
 
+  it.each([
+    ["blank vs 無処理区", null, "無処理区"],
+    ["blank vs 処理区なし", null, "処理区なし"],
+    ["無処理区 vs 処理区なし", "無処理区", "処理区なし"],
+  ])("treats %s as the same treatment when computing the previous difference", (_label, currentTreatment, previousTreatment) => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-15", treatment: currentTreatment, averageDiameter: 52 }),
+      record({ id: "previous", measuredAt: "2026-07-20", surveyMonth: "2026-07", surveyPeriod: "後半", treatment: previousTreatment, averageDiameter: 50 }),
+    ];
+    expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBe(2);
+  });
+
   it("returns missing differences when the immediately previous day has multiple records", () => {
     const records = [
       record({ id: "current", measuredAt: "2026-08-15", averageDiameter: 52 }),
