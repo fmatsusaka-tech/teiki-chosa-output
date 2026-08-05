@@ -7,7 +7,7 @@ import { buildPeriodicAnalysis } from "../../features/periodic-analysis/periodic
 import type { PeriodicAnalysisQuery, PeriodicAnalysisRow } from "../../features/periodic-analysis/periodic-analysis.types";
 import { formatDifference } from "../../features/periodic-analysis/periodic-analysis-display";
 import { columns, displayDay, initialColumns, type ColumnContext, type ColumnKey, type RainfallStation } from "../../features/periodic-analysis/periodic-analysis-columns";
-import { getVarietyCategory } from "../../features/periodic-analysis/variety-category";
+import { getVarietyCategory } from "../../features/shared/variety-category";
 import type { PredictionRecordResult } from "../../features/prediction-integration/prediction-integration.types";
 import type { DailyWeatherRecord } from "../../features/weather/weather-30-day";
 

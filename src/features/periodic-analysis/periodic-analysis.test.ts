@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { buildPeriodicAnalysis } from "./periodic-analysis";
-import { getPredictionModel, getVarietyCategory } from "./variety-category";
+import { getPredictionModel, getVarietyCategory } from "../shared/variety-category";
 import type { PredictionRecordResult } from "../prediction-integration/prediction-integration.types";
 
 const record = (overrides: Partial<AnalysisDataRecord> = {}): AnalysisDataRecord => ({
