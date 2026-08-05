@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const component = readFileSync(new URL("./periodic-analysis-client.tsx", import.meta.url), "utf8");
 const columns = readFileSync(new URL("../../features/periodic-analysis/periodic-analysis-columns.ts", import.meta.url), "utf8");
-const stylesheet = readFileSync(new URL("../globals.css", import.meta.url), "utf8");
+const stylesheet = readFileSync(new URL("./periodic-analysis.css", import.meta.url), "utf8");
 
 describe("periodic analysis table layout", () => {
   it("uses one horizontal scroll container for the heading and every row", () => {

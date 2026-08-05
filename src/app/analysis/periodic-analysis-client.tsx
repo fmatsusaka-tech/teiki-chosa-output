@@ -1,5 +1,6 @@
 "use client";
 
+import "./periodic-analysis.css";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
