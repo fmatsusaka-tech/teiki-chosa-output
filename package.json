@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "check:starter": "node scripts/check-project-initialized.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "prediction:masters:build": "tsc -p tsconfig.scripts.json",
