@@ -17,6 +17,7 @@
     "src/features/prediction-engine/**/*.ts",
     "src/features/prediction-integration/**/*.ts",
     "src/server/analysis-data/**/*.ts",
+    "src/server/google-sheets/**/*.ts",
     "src/server/prediction-data/**/*.ts",
     "src/features/shared/variety-category.ts"
   ],

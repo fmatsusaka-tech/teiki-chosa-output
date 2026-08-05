@@ -1,4 +1,4 @@
-import { createSign } from "node:crypto";
+import { fetchGoogleAccessToken } from "../../src/server/google-sheets/google-sheets-auth";
 import {
   predictionCoefficientSheetTitle,
   predictionMasterSpreadsheetTitle,
@@ -36,9 +36,6 @@ type GoogleSpreadsheetResponse = {
   }[];
 };
 
-const base64url = (value: string | Buffer): string =>
-  Buffer.from(value).toString("base64url");
-
 const sanitizedHttpError = (stage: string, status: number): Error =>
   new Error(`${stage}に失敗しました: HTTP ${status}`);
 
@@ -53,38 +50,11 @@ const accessToken = async (fetchImpl: FetchImplementation): Promise<string> => {
     throw new Error("Google Sheets Writer認証が設定されていません。");
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  const unsigned = [
-    base64url(JSON.stringify({ alg: "RS256", typ: "JWT" })),
-    base64url(
-      JSON.stringify({
-        iss: email,
-        scope: googleSheetsWriterScope,
-        aud: "https://oauth2.googleapis.com/token",
-        iat: now,
-        exp: now + 3600,
-      }),
-    ),
-  ].join(".");
-  const signer = createSign("RSA-SHA256");
-  signer.update(unsigned);
-  signer.end();
-  const assertion = `${unsigned}.${signer.sign(privateKey).toString("base64url")}`;
-
-  const response = await fetchImpl("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion,
-    }),
-  });
-  if (!response.ok) throw sanitizedHttpError("Google認証", response.status);
-  const json = (await response.json()) as { access_token?: string };
-  if (!json.access_token) {
-    throw new Error("Google認証トークンを取得できませんでした。");
-  }
-  return json.access_token;
+  return fetchGoogleAccessToken(
+    fetchImpl,
+    { email, privateKey, scope: googleSheetsWriterScope },
+    "Google Sheets Writer認証",
+  );
 };
 
 const cellValue = (
