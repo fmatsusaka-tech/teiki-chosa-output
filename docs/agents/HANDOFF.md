@@ -9,7 +9,7 @@ Claude、Codex、人間の間で共有する作業引き継ぎファイルです
 - Branch: `chore/adopt-ai-project-starter-v4.5`
 - Primary agent: Claude(実装)
 - Reviewer: 未実施（Review Level: Low、詳細は下記）
-- Status: origin/mainを取り込み・文書内容を最新化済み。PR作成・CI確認待ち
+- Status: origin/main取り込み・文書最新化・PR #112作成・CI green確認済み。Ownerによるマージ可否判断待ち
 - Last updated: 2026-08-05
 
 ## Goal and Acceptance Criteria
@@ -23,7 +23,8 @@ Claude、Codex、人間の間で共有する作業引き継ぎファイルです
   - [x] package-lock.json問題など技術的負債を記録（ROADMAP.mdの「技術的負債」）
   - [x] Issueを整理（#22, #72, #97との関係、および既存の全体監査レポートとの関係をROADMAP.mdに記録）
   - [x] check:starterと最小限のCIステップを既存の検証を壊さない形で導入
-  - [ ] PR作成、CI green確認、Ownerによるマージ可否判断
+  - [x] PR作成（[#112](https://github.com/fmatsusaka-tech/teiki-chosa-output/pull/112)）、CI green確認
+  - [ ] Ownerによるマージ可否判断
 
 ## Scope
 
@@ -84,7 +85,7 @@ Claude、Codex、人間の間で共有する作業引き継ぎファイルです
 | `npm test`(origin/mainマージ後) | Green | 36 files / 469 tests |
 | `npm run build`(origin/mainマージ後) | Green | |
 | `npm audit`(origin/mainマージ後) | High 3件 | Issue #97で追跡中、`next@16`系アップグレードが必要 |
-| CI (`ci.yml`) | (PR作成後に記録) | |
+| CI (`ci.yml`, PR #112) | Green | 全ステップ（check:starter含む）成功 |
 
 ## Decisions Made
 
