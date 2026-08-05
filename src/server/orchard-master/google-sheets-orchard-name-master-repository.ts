@@ -1,4 +1,3 @@
-import { createSign } from "node:crypto";
 import {
   decodeOrchardNameMaster,
   orchardMasterSpreadsheetTitle,
@@ -6,6 +5,7 @@ import {
   orchardNameMasterSheetTitle,
   type OrchardNameMapping,
 } from "../../features/orchard-master/orchard-name-master";
+import { fetchGoogleAccessToken, isRecord } from "../google-sheets/google-sheets-auth";
 
 export const orchardMasterReaderScope = "https://www.googleapis.com/auth/spreadsheets.readonly";
 type FetchImplementation = typeof fetch;
@@ -21,38 +21,12 @@ export class OrchardMasterRepositoryError extends Error {
   }
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
-const base64url = (value: string | Buffer): string => Buffer.from(value).toString("base64url");
-
 const getToken = async (fetchImpl: FetchImplementation, email: string, privateKey: string): Promise<string> => {
-  let assertion: string;
   try {
-    const now = Math.floor(Date.now() / 1000);
-    const unsigned = [
-      base64url(JSON.stringify({ alg: "RS256", typ: "JWT" })),
-      base64url(JSON.stringify({ iss: email, scope: orchardMasterReaderScope, aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600 })),
-    ].join(".");
-    const signer = createSign("RSA-SHA256"); signer.update(unsigned); signer.end();
-    assertion = `${unsigned}.${signer.sign(privateKey).toString("base64url")}`;
-  } catch {
-    throw new OrchardMasterRepositoryError("AUTHENTICATION_FAILED", "園地マスタ読取認証の署名準備に失敗しました。");
+    return await fetchGoogleAccessToken(fetchImpl, { email, privateKey, scope: orchardMasterReaderScope }, "園地マスタ読取認証");
+  } catch (error) {
+    throw new OrchardMasterRepositoryError("AUTHENTICATION_FAILED", error instanceof Error ? error.message : "園地マスタ読取認証に失敗しました。");
   }
-  let response: Response;
-  try {
-    response = await fetchImpl("https://oauth2.googleapis.com/token", {
-      method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion }),
-    });
-  } catch {
-    throw new OrchardMasterRepositoryError("AUTHENTICATION_FAILED", "園地マスタ読取認証への接続に失敗しました。");
-  }
-  if (!response.ok) throw new OrchardMasterRepositoryError("AUTHENTICATION_FAILED", `園地マスタ読取認証に失敗しました: HTTP ${response.status}`);
-  let payload: unknown;
-  try { payload = await response.json(); } catch { throw new OrchardMasterRepositoryError("AUTHENTICATION_FAILED", "園地マスタ読取認証の応答を解析できません。"); }
-  if (!isRecord(payload) || typeof payload.access_token !== "string" || payload.access_token.trim() === "") {
-    throw new OrchardMasterRepositoryError("AUTHENTICATION_FAILED", "園地マスタ読取認証の応答が不正です。");
-  }
-  return payload.access_token;
 };
 
 const decodeGrid = (sheet: Record<string, unknown>): readonly (readonly unknown[])[] => {

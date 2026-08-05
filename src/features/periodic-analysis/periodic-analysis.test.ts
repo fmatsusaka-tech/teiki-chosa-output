@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { buildPeriodicAnalysis } from "./periodic-analysis";
-import { getPredictionModel, getVarietyCategory } from "./variety-category";
+import { getPredictionModel, getVarietyCategory } from "../shared/variety-category";
 import type { PredictionRecordResult } from "../prediction-integration/prediction-integration.types";
 
 const record = (overrides: Partial<AnalysisDataRecord> = {}): AnalysisDataRecord => ({
@@ -43,7 +43,7 @@ describe("buildPeriodicAnalysis", () => {
     expect(buildPeriodicAnalysis(records, { ...query, treatment: "" })).toEqual([]);
   });
 
-  it("groups and orders by period year, measured date, registration date, then id", () => {
+  it("groups and orders by period year, measured date, orchard name, registration date, then id", () => {
     const records = [
       record({ id: "b", measuredAt: "2026-08-01", registeredAt: "2026-08-01T10:00:00Z" }),
       record({ id: "a", measuredAt: "2026-08-01", registeredAt: "2026-08-01T10:00:00Z" }),
@@ -53,6 +53,15 @@ describe("buildPeriodicAnalysis", () => {
     const groups = buildPeriodicAnalysis(records, query);
     expect(groups.map((group) => group.year)).toEqual([2026, 2025]);
     expect(groups[0].rows.map((row) => row.registrationId)).toEqual(["later", "a", "b"]);
+  });
+
+  it("sorts same-date rows by orchard name (50音順) ahead of registration date and id", () => {
+    const records = [
+      record({ id: "z-id-but-early-name", orchard: "あいうえお園", measuredAt: "2026-08-01", registeredAt: "2026-08-01T12:00:00Z" }),
+      record({ id: "a-id-but-late-name", orchard: "わをん園", measuredAt: "2026-08-01", registeredAt: "2026-08-01T10:00:00Z" }),
+    ];
+    const rows = buildPeriodicAnalysis(records, query)[0].rows;
+    expect(rows.map((row) => row.registrationId)).toEqual(["z-id-but-early-name", "a-id-but-late-name"]);
   });
 
   it("handles statuses and partial missing observations without dropping the row", () => {
@@ -81,6 +90,14 @@ describe("buildPeriodicAnalysis", () => {
     });
   });
 
+  it("matches the previous record by variety category, not the raw 品種 text, when they are spelling variants", () => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-01", surveyMonth: "2026-08", surveyPeriod: "前半", variety: "ゆら", averageDiameter: 52 }),
+      record({ id: "previous", measuredAt: "2026-07-20", surveyMonth: "2026-07", surveyPeriod: "後半", variety: "ゆら早生", averageDiameter: 50 }),
+    ];
+    expect(buildPeriodicAnalysis(records, { ...query, varietyCategory: "ゆら早生" })[0].rows[0].previousDifference.diameterAverage).toBe(2);
+  });
+
   it("does not mix a different treatment after orchard normalization", () => {
     const records = [
       record({ id: "current", measuredAt: "2026-08-15", orchard: "12号", treatment: "無処理", averageDiameter: 52 }),
@@ -97,6 +114,24 @@ describe("buildPeriodicAnalysis", () => {
       record({ id: "older", measuredAt: "2026-07-15", surveyMonth: "2026-07", surveyPeriod: "前半", averageDiameter: 10 }),
     ];
     expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBeNull();
+  });
+
+  it("orders by 調査基準月／調査区分, not by 計測日, even when 計測日 disagrees with the survey period order", () => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-01", surveyMonth: "2026-08", surveyPeriod: "前半", averageDiameter: 52 }),
+      // Measured after "current", but its survey period (7月後半) is still the one immediately before 8月前半.
+      record({ id: "previous", measuredAt: "2026-08-20", surveyMonth: "2026-07", surveyPeriod: "後半", averageDiameter: 50 }),
+    ];
+    expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBe(2);
+  });
+
+  it("does not treat a same-period record on a different 計測日 as the previous record", () => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-15", surveyMonth: "2026-08", surveyPeriod: "前半", averageDiameter: 52 }),
+      record({ id: "same-period-different-day", measuredAt: "2026-08-01", surveyMonth: "2026-08", surveyPeriod: "前半", averageDiameter: 10 }),
+    ];
+    const current = buildPeriodicAnalysis(records, query)[0].rows.find((row) => row.registrationId === "current")!;
+    expect(current.previousDifference.diameterAverage).toBeNull();
   });
 
   it("does not compare separate records from the same survey round", () => {
@@ -138,6 +173,18 @@ describe("buildPeriodicAnalysis", () => {
       record({ id: "other-variety", measuredAt: "2026-08-10", variety: "山下紅", averageDiameter: 10 }),
     ];
     expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBeNull();
+  });
+
+  it.each([
+    ["blank vs 無処理区", null, "無処理区"],
+    ["blank vs 処理区なし", null, "処理区なし"],
+    ["無処理区 vs 処理区なし", "無処理区", "処理区なし"],
+  ])("treats %s as the same treatment when computing the previous difference", (_label, currentTreatment, previousTreatment) => {
+    const records = [
+      record({ id: "current", measuredAt: "2026-08-15", treatment: currentTreatment, averageDiameter: 52 }),
+      record({ id: "previous", measuredAt: "2026-07-20", surveyMonth: "2026-07", surveyPeriod: "後半", treatment: previousTreatment, averageDiameter: 50 }),
+    ];
+    expect(buildPeriodicAnalysis(records, query)[0].rows[0].previousDifference.diameterAverage).toBe(2);
   });
 
   it("returns missing differences when the immediately previous day has multiple records", () => {

@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const component = readFileSync(new URL("./periodic-analysis-client.tsx", import.meta.url), "utf8");
-const stylesheet = readFileSync(new URL("../globals.css", import.meta.url), "utf8");
+const columns = readFileSync(new URL("../../features/periodic-analysis/periodic-analysis-columns.ts", import.meta.url), "utf8");
+const stylesheet = readFileSync(new URL("./periodic-analysis.css", import.meta.url), "utf8");
 
 describe("periodic analysis table layout", () => {
   it("uses one horizontal scroll container for the heading and every row", () => {
@@ -37,8 +38,8 @@ describe("periodic analysis table layout", () => {
   });
 
   it("keeps every harvest prediction column compact on mobile", () => {
-    expect(component.match(/Prediction:\s*\{[^}]*width:\s*96/g)).toHaveLength(3);
-    expect(component).not.toMatch(/Prediction:\s*\{[^}]*width:\s*150/);
+    expect(columns.match(/Prediction:\s*\{[^}]*width:\s*96/g)).toHaveLength(3);
+    expect(columns).not.toMatch(/Prediction:\s*\{[^}]*width:\s*150/);
   });
 
   it("offers selectable Yuasa and Kawabe rainfall stations", () => {
@@ -54,28 +55,28 @@ describe("periodic analysis table layout", () => {
   });
 
   it("uses separate subtle backgrounds for diameter, brix, and acidity columns", () => {
-    expect(component).toContain('tone: "diameter"');
-    expect(component).toContain('tone: "brix"');
-    expect(component).toContain('tone: "acidity"');
+    expect(columns).toContain('tone: "diameter"');
+    expect(columns).toContain('tone: "brix"');
+    expect(columns).toContain('tone: "acidity"');
     expect(stylesheet).toMatch(/\.analysis-values \.analysis-metric-diameter\s*\{[^}]*background:\s*#f1f7fb/);
     expect(stylesheet).toMatch(/\.analysis-values \.analysis-metric-brix\s*\{[^}]*background:\s*#fff9e8/);
     expect(stylesheet).toMatch(/\.analysis-values \.analysis-metric-acidity\s*\{[^}]*background:\s*#fff2f5/);
   });
 
   it("prioritizes the day in the narrow mobile date cell", () => {
-    expect(component).toContain('return match ? `${Number(match[2])}日` : "—"');
+    expect(columns).toContain('return match ? `${Number(match[2])}日` : "—"');
     expect(component).toContain("<span title={record.measuredAt}>{displayDay(record.measuredAt)}</span>");
     expect(stylesheet).toMatch(/\.analysis-identity\s*\{[^}]*grid-template-columns:\s*56px 84px[^}]*flex:\s*0 0 140px/);
     expect(component).toContain("const tableWidth = 140 + visibleColumns.reduce");
   });
 
   it("places detailed diameter columns after the weather columns", () => {
-    const averageIndex = component.indexOf('diameter: { label: "平均横径"');
-    const brixIndex = component.indexOf('brix: { label: "糖度"');
-    const rainfallIndex = component.indexOf('rainfall30Days: { label: "30日降水量"');
-    const temperatureIndex = component.indexOf('temperature30Days: { label: "30日平均気温"');
-    const minimumIndex = component.indexOf('minimumDiameter: { label: "最小横径"');
-    const maximumIndex = component.indexOf('maximumDiameter: { label: "最大横径"');
+    const averageIndex = columns.indexOf('diameter: { label: "平均横径"');
+    const brixIndex = columns.indexOf('brix: { label: "糖度"');
+    const rainfallIndex = columns.indexOf('rainfall30Days: { label: "30日降水量"');
+    const temperatureIndex = columns.indexOf('temperature30Days: { label: "30日平均気温"');
+    const minimumIndex = columns.indexOf('minimumDiameter: { label: "最小横径"');
+    const maximumIndex = columns.indexOf('maximumDiameter: { label: "最大横径"');
 
     expect(averageIndex).toBeLessThan(brixIndex);
     expect(rainfallIndex).toBeLessThan(temperatureIndex);

@@ -1,4 +1,3 @@
-import { createSign } from "node:crypto";
 import {
   predictionCoefficientSheetTitle,
   predictionMasterSpreadsheetTitle,
@@ -10,6 +9,7 @@ import {
   type PredictionMasterSheetData,
 } from "../../features/prediction-data/prediction-master-sheet-decoder";
 import type { PredictionMasterBundle } from "../../features/prediction-data/prediction-master.types";
+import { fetchGoogleAccessToken, isRecord } from "../google-sheets/google-sheets-auth";
 
 export const predictionMasterRepositoryScope =
   "https://www.googleapis.com/auth/spreadsheets.readonly";
@@ -28,9 +28,6 @@ type SpreadsheetResponse = {
     data?: { rowData?: { values?: { effectiveValue?: EffectiveValue }[] }[] }[];
   }[];
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 export type PredictionMasterRepositoryErrorCode =
   | "AUTHENTICATION_FAILED"
@@ -56,9 +53,6 @@ export type PredictionMasterRepository = {
   }): Promise<PredictionMasterBundle>;
 };
 
-const base64url = (value: string | Buffer): string =>
-  Buffer.from(value).toString("base64url");
-
 const accessToken = async (fetchImpl: FetchImplementation): Promise<string> => {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(
@@ -71,73 +65,18 @@ const accessToken = async (fetchImpl: FetchImplementation): Promise<string> => {
       "Prediction Master読取認証が設定されていません。",
     );
   }
-  let assertion: string;
   try {
-    const now = Math.floor(Date.now() / 1000);
-    const unsigned = [
-      base64url(JSON.stringify({ alg: "RS256", typ: "JWT" })),
-      base64url(
-        JSON.stringify({
-          iss: email,
-          scope: predictionMasterRepositoryScope,
-          aud: "https://oauth2.googleapis.com/token",
-          iat: now,
-          exp: now + 3600,
-        }),
-      ),
-    ].join(".");
-    const signer = createSign("RSA-SHA256");
-    signer.update(unsigned);
-    signer.end();
-    assertion = `${unsigned}.${signer.sign(privateKey).toString("base64url")}`;
-  } catch {
+    return await fetchGoogleAccessToken(
+      fetchImpl,
+      { email, privateKey, scope: predictionMasterRepositoryScope },
+      "Prediction Master読取認証",
+    );
+  } catch (error) {
     throw new PredictionMasterRepositoryError(
       "AUTHENTICATION_FAILED",
-      "Prediction Master読取認証の署名準備に失敗しました。",
+      error instanceof Error ? error.message : "Prediction Master読取認証に失敗しました。",
     );
   }
-  let response: Response;
-  try {
-    response = await fetchImpl("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        assertion,
-      }),
-    });
-  } catch {
-    throw new PredictionMasterRepositoryError(
-      "AUTHENTICATION_FAILED",
-      "Prediction Master読取認証通信に失敗しました。",
-    );
-  }
-  if (!response.ok) {
-    throw new PredictionMasterRepositoryError(
-      "AUTHENTICATION_FAILED",
-      `Prediction Master読取認証に失敗しました: HTTP ${response.status}`,
-    );
-  }
-  let parsed: unknown;
-  try {
-    parsed = await response.json();
-  } catch {
-    throw new PredictionMasterRepositoryError(
-      "AUTHENTICATION_FAILED",
-      "Prediction Master読取認証応答の解析に失敗しました。",
-    );
-  }
-  if (
-    !isRecord(parsed) ||
-    typeof parsed.access_token !== "string" ||
-    parsed.access_token.trim() === ""
-  ) {
-    throw new PredictionMasterRepositoryError(
-      "AUTHENTICATION_FAILED",
-      "Prediction Master読取認証応答が不正です。",
-    );
-  }
-  return parsed.access_token;
 };
 
 const cellValue = (
@@ -186,6 +125,7 @@ export const createGoogleSheetsPredictionMasterRepository = (
       response = await fetchImpl(url, {
         method: "GET",
         headers: { authorization: `Bearer ${token}` },
+        cache: "no-store",
       });
     } catch {
       throw new PredictionMasterRepositoryError(

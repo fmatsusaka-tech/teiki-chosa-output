@@ -107,15 +107,10 @@
 - Spreadsheet ID、正式タイトル、シート名を照合し、Sheets APIではGET以外を使用しない。
 - 認証・取得・契約検証の失敗時に、公開GViz経路へ自動フォールバックしない。
 
-### 旧GViz取得境界
+### 旧GViz取得境界（削除済み）
 
-- Outputは固定されたInput Spreadsheetとgidに対して、`調査データ`だけをGETで取得する。書込みHTTPメソッドを使用しない。
-- `readTab()`は実行時にも`調査データ`以外を拒否し、Repositoryは正式な必須見出しを検証する。
-- HTTP失敗、JSON解析失敗、応答構造不正は分類可能なサニタイズ済みエラーとして扱う。
-- エラーへSpreadsheet ID、gid、応答本文、登録ID、園地名、個別調査値、認証情報を含めない。
-- GViz応答からSpreadsheetタイトルやシートタイトルは取得できないため、タイトル一致を保証しない。固定されたSpreadsheet ID・gid、タブ引数、必須見出しによる多層防御を使用する。
-- GViz DataSourceは切替直後のロールバック候補として残すが、画面の通常取得経路からは呼び出さない。
-- 匿名Viewer解除とGViz実装の削除は、Cloud Run上の画面回帰完了後に独立Issueで扱う。
+- 認証付き取得経路（`GoogleSheetsApiAnalysisDataSource`）への切替後、Cloud Run上の画面回帰が確認できたため、非認証GViz DataSource（`google-sheets-analysis-data-source.ts`）と、そこにハードコードされていたInput正本Spreadsheet ID・gidは公開リポジトリから削除した（Issue #89）。
+- 匿名Viewer解除自体はInput側Google Drive ACLの話であり、本リポジトリのコード変更だけでは完結しない。Issue #22で引き続き追跡する。
 
 ### 正本27列との関係
 

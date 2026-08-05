@@ -75,8 +75,3 @@ export const isIncludedInAnalysis = (
   options: AnalysisInclusionOptions = {},
 ): boolean => standardAnalysisStatuses.has(record.dataStatus)
   || (options.includeNeedsReview === true && record.dataStatus === "要確認");
-
-/** @deprecated `isIncludedInAnalysis` を使用する。 */
-export const isIncludedInStandardAnalysis = (
-  record: Pick<AnalysisDataRecord, "dataStatus">,
-): boolean => isIncludedInAnalysis(record);

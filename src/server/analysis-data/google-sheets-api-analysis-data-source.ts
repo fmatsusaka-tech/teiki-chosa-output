@@ -1,5 +1,5 @@
-import { createSign } from "node:crypto";
 import type { AnalysisDataTableSource } from "../../repositories/analysis-data-repository";
+import { fetchGoogleAccessToken, isRecord } from "../google-sheets/google-sheets-auth";
 
 export const analysisDataSpreadsheetTitle = "定期調査データバンク";
 export const analysisDataSheetTitle = "調査データ";
@@ -28,12 +28,6 @@ export class AnalysisDataSourceError extends Error {
   }
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const base64url = (value: string | Buffer): string =>
-  Buffer.from(value).toString("base64url");
-
 const readerConfiguration = (): {
   email: string;
   privateKey: string;
@@ -54,81 +48,23 @@ const readerConfiguration = (): {
   return { email, privateKey, spreadsheetId };
 };
 
-const createReaderAssertion = (email: string, privateKey: string): string => {
-  try {
-    const now = Math.floor(Date.now() / 1000);
-    const unsigned = [
-      base64url(JSON.stringify({ alg: "RS256", typ: "JWT" })),
-      base64url(
-        JSON.stringify({
-          iss: email,
-          scope: analysisDataReaderScope,
-          aud: "https://oauth2.googleapis.com/token",
-          iat: now,
-          exp: now + 3600,
-        }),
-      ),
-    ].join(".");
-    const signer = createSign("RSA-SHA256");
-    signer.update(unsigned);
-    signer.end();
-    return `${unsigned}.${signer.sign(privateKey).toString("base64url")}`;
-  } catch {
-    throw new AnalysisDataSourceError(
-      "AUTHENTICATION_FAILED",
-      "調査データ読取認証の署名準備に失敗しました。",
-    );
-  }
-};
-
 const readerAccessToken = async (
   fetchImpl: FetchImplementation,
   email: string,
   privateKey: string,
 ): Promise<string> => {
-  const assertion = createReaderAssertion(email, privateKey);
-  let response: Response;
   try {
-    response = await fetchImpl("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        assertion,
-      }),
-    });
-  } catch {
+    return await fetchGoogleAccessToken(
+      fetchImpl,
+      { email, privateKey, scope: analysisDataReaderScope },
+      "調査データ読取認証",
+    );
+  } catch (error) {
     throw new AnalysisDataSourceError(
       "AUTHENTICATION_FAILED",
-      "調査データ読取認証への接続に失敗しました。",
+      error instanceof Error ? error.message : "調査データ読取認証に失敗しました。",
     );
   }
-  if (!response.ok) {
-    throw new AnalysisDataSourceError(
-      "AUTHENTICATION_FAILED",
-      `調査データ読取認証に失敗しました: HTTP ${response.status}`,
-    );
-  }
-  let parsed: unknown;
-  try {
-    parsed = await response.json();
-  } catch {
-    throw new AnalysisDataSourceError(
-      "AUTHENTICATION_FAILED",
-      "調査データ読取認証の応答を解析できません。",
-    );
-  }
-  if (
-    !isRecord(parsed) ||
-    typeof parsed.access_token !== "string" ||
-    parsed.access_token.trim() === ""
-  ) {
-    throw new AnalysisDataSourceError(
-      "AUTHENTICATION_FAILED",
-      "調査データ読取認証の応答が不正です。",
-    );
-  }
-  return parsed.access_token;
 };
 
 const effectiveValue = (value: unknown): string | number | boolean | null => {

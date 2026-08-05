@@ -1,5 +1,14 @@
-import Link from "next/link";
+import { createAuthenticatedAnalysisDataRepository } from "../../server/analysis-data/authenticated-analysis-data-repository";
+import { loadDataManagementPageData } from "../../server/analysis-data/data-management-page-data";
+import { DataManagementClient } from "./data-management-client";
 
-export default function DataManagementPage() {
-  return <main className="page-shell"><p className="eyebrow">DATA MANAGEMENT</p><h1>データ管理</h1><p className="placeholder">Outputで利用する読取データを検索・確認します。Inputのデータは更新しません。</p><Link className="back-link" href="/">ホームへ戻る</Link></main>;
+export const dynamic = "force-dynamic";
+
+const getPageData = async () => loadDataManagementPageData({
+  loadRecords: () => createAuthenticatedAnalysisDataRepository().getAll(),
+});
+
+export default async function DataManagementPage() {
+  const { visibilitySummary, dataError } = await getPageData();
+  return <DataManagementClient dataError={dataError} visibilitySummary={visibilitySummary} />;
 }

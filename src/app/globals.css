@@ -37,6 +37,21 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .home-link { display: inline-flex; min-height: 36px; align-items: center; margin: -6px 0 10px; border: 1px solid #b8c5ba; border-radius: 999px; padding: 0 12px; background: #fff; color: #285d36; font-size: .78rem; font-weight: 800; text-decoration: none; }
 .home-link:hover { border-color: #4f7859; background: #f3f8f3; }
 
+.diagnostics-section { margin-top: 24px; padding: 20px; border: 1px solid #dce3dc; border-radius: 16px; background: #fff; }
+.diagnostics-section h2 { margin: 0 0 6px; font-size: 1.1rem; }
+.diagnostics-description { margin: 0 0 14px; color: #536157; font-size: .82rem; line-height: 1.6; }
+.diagnostics-empty { margin: 0; color: #5d6b60; font-size: .88rem; }
+.diagnostics-summary { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.diagnostics-summary div { min-width: 140px; padding: 10px 14px; border: 1px solid #d2dbd2; border-radius: 10px; background: #f8faf7; }
+.diagnostics-summary span { display: block; margin-bottom: 4px; color: #536157; font-size: .72rem; font-weight: 700; }
+.diagnostics-summary strong { font-size: 1.15rem; }
+.diagnostics-reason-table { width: 100%; margin-bottom: 12px; border-collapse: collapse; font-size: .82rem; }
+.diagnostics-reason-table th, .diagnostics-reason-table td { padding: 6px 8px; border-bottom: 1px solid #e0e6e0; text-align: left; }
+.diagnostics-record-list { margin: 12px 0 0; padding: 0; list-style: none; }
+.diagnostics-record-list li { display: flex; flex-direction: column; gap: 2px; padding: 8px; border-bottom: 1px solid #e0e6e0; font-size: .78rem; }
+.diagnostics-record-list code { font-size: .72rem; color: #536157; }
+.diagnostics-record-reasons { color: #a24b1f; }
+
 @media (max-width: 640px) {
 }
 
@@ -45,67 +60,7 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
   .feature-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-.analysis-page { width: 100%; max-width: 980px; margin: 0 auto; padding-bottom: 64px; }
-.analysis-title { padding: 24px 12px 14px; }
-.analysis-title h1 { font-size: 1.55rem; }
-.analysis-filters { position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 9px; padding: 10px 12px; border-block: 1px solid #cbd5cc; background: #f4f6f3; box-shadow: 0 4px 8px rgba(23, 32, 24, .08); }
-.analysis-filters > label { display: grid; gap: 4px; color: #415245; font-size: .72rem; font-weight: 700; }
-.analysis-filters select { width: 100%; height: 35px; border: 1px solid #aebcaf; border-radius: 4px; padding: 0 7px; background: white; color: #172018; font: inherit; font-size: .85rem; }
-.analysis-filters fieldset { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; margin: 0; padding: 0; border: 0; font-size: .85rem; }
-.analysis-filters legend { float: left; margin-right: 12px; color: #415245; font-size: .72rem; font-weight: 700; }
-.analysis-filters fieldset label { display: flex; align-items: center; gap: 3px; }
-.analysis-filters input { margin: 0; accent-color: #1f4d2b; }
-.analysis-filters > .analysis-rainfall-station { grid-column: 1 / -1; grid-template-columns: 78px minmax(0, 140px); align-items: center; }
-.analysis-results { padding: 0 0 24px; }
-.analysis-result-summary { display: flex; align-items: baseline; gap: 6px; min-height: 34px; padding: 8px 12px; border-bottom: 1px solid #d2dbd2; background: #fff; font-size: .82rem; }
-.analysis-result-summary span { color: #536157; font-size: .72rem; font-weight: 700; }
-.analysis-result-summary strong { font-size: 1rem; }
-.analysis-result-summary small { color: #5d6b60; }
-.analysis-result-summary button { margin-left: auto; border: 1px solid #aebcaf; border-radius: 4px; padding: 5px 8px; background: #fff; color: #27482e; font: inherit; font-size: .75rem; font-weight: 700; }
-.analysis-column-picker { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; padding: 10px 12px; border-bottom: 1px solid #cbd5cc; background: #f8faf7; font-size: .76rem; }
-.analysis-column-picker label { display: flex; align-items: center; gap: 4px; }
-.analysis-column-picker input { margin: 0; accent-color: #1f4d2b; }
-.analysis-future-option { color: #7a857b; }
-.analysis-empty { margin: 0; padding: 22px 12px; color: #5d6b60; font-size: .88rem; }
-.analysis-year { --year-top: 104px; }
-.analysis-year-heading { position: sticky; top: var(--year-top); z-index: 10; display: block; width: 100%; height: 36px; border: 0; border-block: 1px solid #bfcabe; border-radius: 0; padding: 0 12px; background: #e6ece4; color: #1f3524; text-align: left; font-size: .86rem; font-weight: 800; cursor: pointer; }
-.analysis-table-scroll { max-width: 100%; overflow-x: auto; overflow-y: visible; border-bottom: 1px solid #d2dbd2; background: #fff; scrollbar-width: thin; }
-.analysis-table { background: #fff; }
-.analysis-column-headings, .analysis-row { display: flex; min-width: 0; height: 37px; border-bottom: 1px solid #e0e6e0; }
-.analysis-column-headings { position: relative; z-index: 9; height: 30px; background: #f8faf7; color: #536157; font-size: .68rem; font-weight: 800; }
-.analysis-identity { position: sticky; left: 0; z-index: 2; display: grid; grid-template-columns: 56px 84px; flex: 0 0 140px; width: 140px; align-items: center; overflow: hidden; border-right: 1px solid #ced8cf; background: inherit; box-shadow: 2px 0 3px rgb(31 47 36 / 8%); }
-.analysis-column-headings .analysis-identity { background: #f8faf7; }
-.analysis-row .analysis-identity { background: #fff; }
-.analysis-identity span { overflow: hidden; padding: 0 4px; text-overflow: ellipsis; white-space: nowrap; }
-.analysis-identity span:first-child { padding-left: 8px; font-variant-numeric: tabular-nums; }
-.analysis-values { display: grid; flex: 1 0 auto; height: 100%; align-items: center; font-size: .82rem; font-variant-numeric: tabular-nums; }
-.analysis-values span { overflow: hidden; padding: 0 6px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
-.analysis-column-headings .analysis-values span { text-align: center; }
-.analysis-values .analysis-metric-diameter { background: #f1f7fb; }
-.analysis-values .analysis-metric-brix { background: #fff9e8; }
-.analysis-values .analysis-metric-acidity { background: #fff2f5; }
-.analysis-column-headings .analysis-values .analysis-metric-diameter { background: #e6f1f8; }
-.analysis-column-headings .analysis-values .analysis-metric-brix { background: #fff3d5; }
-.analysis-column-headings .analysis-values .analysis-metric-acidity { background: #fce7ec; }
-.analysis-values .analysis-positive { color: #17633a; font-weight: 800; }
-.analysis-values .analysis-negative { color: #a33a2b; font-weight: 800; }
-.analysis-values .analysis-neutral { color: #455249; font-weight: 800; }
-.analysis-prediction-error { margin: 0; border-bottom: 1px solid #e0c8a8; padding: 10px 12px; background: #fff8e9; color: #68491e; font-size: .8rem; line-height: 1.5; }
-.analysis-weather-warning { margin: 0; border-bottom: 1px solid #c9d6de; padding: 10px 12px; background: #f2f7fa; color: #294b5c; font-size: .8rem; line-height: 1.5; }
-.analysis-master-warning, .orchard-master-warning, .comparison-master-warning { margin: 0; border-bottom: 1px solid #e0c8a8; padding: 10px 12px; background: #fff8e9; color: #68491e; font-size: .8rem; line-height: 1.5; }
-.analysis-row:nth-child(even) { background: #fbfcfa; }
-.analysis-row:nth-child(even) .analysis-identity { background: #fbfcfa; }
-.analysis-row:hover { background: #f2f7f1; }
-.analysis-row:hover .analysis-identity { background: #f2f7f1; }
-
-@media (min-width: 720px) {
-  .analysis-page { padding-inline: 18px; }
-  .analysis-title { padding-inline: 0; }
-  .analysis-filters { --filter-columns: 250px 90px; grid-template-columns: var(--filter-columns) 90px auto; align-items: end; padding-inline: 0; }
-  .analysis-filters fieldset { grid-column: auto; height: 35px; }
-  .analysis-year { --year-top: 70px; }
-  .analysis-year-heading { padding-inline: 12px; }
-}
+.orchard-master-warning, .comparison-master-warning { margin: 0; border-bottom: 1px solid #e0c8a8; padding: 10px 12px; background: #fff8e9; color: #68491e; font-size: .8rem; line-height: 1.5; }
 
 .orchard-page { width: 100%; max-width: 980px; margin: 0 auto; padding-bottom: 64px; }
 .orchard-title { padding: 24px 12px 14px; }

@@ -1,5 +1,6 @@
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { isIncludedInAnalysis } from "../../contracts/analysis-data";
+import { normalizeTreatment } from "../shared/treatment";
 import { getVarietyCategory } from "../shared/variety-category";
 import type { OrchardAnalysisFilterOptions, OrchardAnalysisQuery, OrchardAnalysisRow, OrchardAnalysisTimelineEntry, OrchardComparison, OrchardComparisonRecord, OrchardComparisonSelection, OrchardFilterOption, OrchardSelectionOption } from "./orchard-analysis.types";
 
@@ -23,7 +24,7 @@ const compareNewestFirst = (left: DatedRecord, right: DatedRecord): number =>
 const toRow = (record: AnalysisDataRecord): OrchardAnalysisRow => ({
   registrationId: record.id,
   measuredAt: record.measuredAt ?? "",
-  treatment: record.treatment,
+  treatment: normalizeTreatment(record.treatment),
   diameterAverage: record.averageDiameter,
   brix: record.brix,
   acidity: record.acidity,
@@ -50,12 +51,19 @@ export const getOrchardAnalysisFilterOptions = (
   const eligible = records.filter((record) => isEligible(record)
     && (orchard === undefined || record.orchard === orchard)
     && (varietyCategory === undefined || getVarietyCategory(record.variety) === varietyCategory)
-    && (treatment === undefined || record.treatment === treatment));
+    && (treatment === undefined || normalizeTreatment(record.treatment) === treatment));
+
+  const varietyCounts = new Map<string, number>();
+  for (const record of eligible) {
+    const category = getVarietyCategory(record.variety)!;
+    varietyCounts.set(category, (varietyCounts.get(category) ?? 0) + 1);
+  }
 
   return {
     orchards: [...new Set(eligible.map((record) => record.orchard!))].sort((a, b) => a.localeCompare(b, "ja")),
-    varietyCategories: [...new Set(eligible.map((record) => getVarietyCategory(record.variety)!))].sort((a, b) => a.localeCompare(b, "ja")),
-    treatments: [...new Set(eligible.map((record) => record.treatment))],
+    varietyCategories: [...varietyCounts.keys()].sort((a, b) =>
+      varietyCounts.get(b)! - varietyCounts.get(a)! || a.localeCompare(b, "ja")),
+    treatments: [...new Set(eligible.map((record) => normalizeTreatment(record.treatment)))],
   };
 };
 
@@ -70,9 +78,10 @@ export const getOrchardSelectionOptions = (
     if (!isEligibleSelection(record) || !record.orchard) continue;
     const measuredAt = /^\d{4}-\d{2}-\d{2}$/.test(record.measuredAt ?? "") ? record.measuredAt : null;
     if (year !== undefined && measuredAt?.slice(0, 4) !== String(year)) continue;
-    const key = orchardSelectionKey(record.orchard, record.treatment);
+    const treatment = normalizeTreatment(record.treatment);
+    const key = orchardSelectionKey(record.orchard, treatment);
     const current = latest.get(key);
-    if (!current || (measuredAt ?? "") > (current.measuredAt ?? "")) latest.set(key, { orchard: record.orchard, treatment: record.treatment, measuredAt });
+    if (!current || (measuredAt ?? "") > (current.measuredAt ?? "")) latest.set(key, { orchard: record.orchard, treatment, measuredAt });
   }
   return [...latest.entries()].map(([key, value]) => ({
     key,
@@ -129,7 +138,7 @@ export const buildOrchardAnalysis = (
       || record.orchard !== query.orchard
       || getVarietyCategory(record.variety) !== query.varietyCategory
       || !isEligible(record)
-      || (query.treatment !== undefined && record.treatment !== query.treatment)
+      || (query.treatment !== undefined && normalizeTreatment(record.treatment) !== query.treatment)
     ) {
       return [];
     }
@@ -157,7 +166,7 @@ const toComparisonRecord = (record: AnalysisDataRecord): OrchardComparisonRecord
   registrationId: record.id,
   measuredAt: record.measuredAt!,
   registeredAt: record.registeredAt,
-  treatment: record.treatment,
+  treatment: normalizeTreatment(record.treatment),
   averageDiameter: record.averageDiameter,
   minimumDiameter: record.minimumDiameter,
   maximumDiameter: record.maximumDiameter,
@@ -173,7 +182,7 @@ const comparisonRecords = (
   .filter((record) => isEligible(record)
     && record.orchard === selection.orchard
     && getVarietyCategory(record.variety) === selection.varietyCategory
-    && (selection.treatment === undefined || record.treatment === selection.treatment))
+    && (selection.treatment === undefined || normalizeTreatment(record.treatment) === selection.treatment))
   .map(toComparisonRecord)
   .sort((left, right) => left.measuredAt.localeCompare(right.measuredAt)
     || (left.registeredAt ?? "").localeCompare(right.registeredAt ?? "")

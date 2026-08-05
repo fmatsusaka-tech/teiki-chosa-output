@@ -133,7 +133,7 @@ describe("Google Sheets Prediction Master Repository", () => {
     expect(payload.iss).toBe("reader-test@example.invalid");
 
     const [url, init] = fetchMock.mock.calls[1] as [URL, RequestInit];
-    expect(init.method).toBe("GET");
+    expect(init).toMatchObject({ method: "GET", cache: "no-store" });
     expect(url.searchParams.getAll("ranges")).toEqual([
       `'${predictionModelSheetTitle}'!A:H`,
       `'${predictionCoefficientSheetTitle}'!A:H`,

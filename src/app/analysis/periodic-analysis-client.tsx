@@ -1,69 +1,32 @@
 "use client";
 
+import "./periodic-analysis.css";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { buildPeriodicAnalysis } from "../../features/periodic-analysis/periodic-analysis";
 import type { PeriodicAnalysisQuery, PeriodicAnalysisRow } from "../../features/periodic-analysis/periodic-analysis.types";
 import { formatDifference } from "../../features/periodic-analysis/periodic-analysis-display";
-import { getVarietyCategory } from "../../features/periodic-analysis/variety-category";
-import type { PredictionMetricResult, PredictionRecordResult } from "../../features/prediction-integration/prediction-integration.types";
-import { aggregateWeather30Days, type DailyWeatherRecord, type WeatherMetricOutcome } from "../../features/weather/weather-30-day";
+import { columns, displayDay, initialColumns, type ColumnContext, type ColumnKey, type RainfallStation } from "../../features/periodic-analysis/periodic-analysis-columns";
+import { getVarietyCategory } from "../../features/shared/variety-category";
+import type { PredictionRecordResult } from "../../features/prediction-integration/prediction-integration.types";
+import type { DailyWeatherRecord } from "../../features/weather/weather-30-day";
 
 const fallbackCategories = ["ゆら早生", "早生(宮川・興津 等、又は山下紅)", "田口", "中生(向山など)", "晩生", "丹生系"];
-
-const displayNumber = (value: number | null, digits: number): string => value === null ? "—" : value.toFixed(digits);
-const displayPrediction = (result: PredictionMetricResult | undefined, digits: number): string => {
-  if (!result) return "—";
-  return result.ok ? result.predictedValue.toFixed(digits) : `— ${result.message}`;
-};
-const displayDay = (value: string): string => {
-  const match = /^\d{4}-(\d{2})-(\d{2})$/.exec(value);
-  return match ? `${Number(match[2])}日` : "—";
-};
-
-type ColumnKey = "diameter" | "diameterDifference" | "diameterPrediction"
-  | "minimumDiameter" | "minimumDiameterDifference"
-  | "maximumDiameter" | "maximumDiameterDifference"
-  | "brix" | "brixDifference" | "brixPrediction"
-  | "acidity" | "acidityDifference" | "acidityPrediction"
-  | "brixAcidityRatio" | "brixAcidityRatioDifference"
-  | "rainfall30Days" | "temperature30Days";
-
-type RainfallStation = "yuasa" | "kawabe";
-type ColumnContext = { rainfallStation: RainfallStation; weatherRecords: readonly DailyWeatherRecord[] };
-type MetricTone = "diameter" | "brix" | "acidity";
-
-const displayWeather = (outcome: WeatherMetricOutcome, digits: number): string => outcome.ok ? outcome.value.toFixed(digits) : "—";
-
-const columns: Record<ColumnKey, { label: string; width: number; tone?: MetricTone; value: (record: PeriodicAnalysisRow, context: ColumnContext) => string; differenceValue?: (record: PeriodicAnalysisRow) => number | null }> = {
-  diameter: { label: "平均横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterAverage, 1) },
-  diameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterAverage, 1).text, differenceValue: (record) => record.previousDifference.diameterAverage },
-  diameterPrediction: { label: "収穫時予測", width: 96, tone: "diameter", value: (record) => displayPrediction(record.prediction?.metrics.横径, 1) },
-  brix: { label: "糖度", width: 58, tone: "brix", value: (record) => displayNumber(record.brix, 1) },
-  brixDifference: { label: "前回差", width: 58, tone: "brix", value: (record) => formatDifference(record.previousDifference.brix, 1).text, differenceValue: (record) => record.previousDifference.brix },
-  brixPrediction: { label: "収穫時予測", width: 96, tone: "brix", value: (record) => displayPrediction(record.prediction?.metrics.糖度, 1) },
-  acidity: { label: "クエン酸", width: 68, tone: "acidity", value: (record) => displayNumber(record.acidity, 2) },
-  acidityDifference: { label: "前回差", width: 58, tone: "acidity", value: (record) => formatDifference(record.previousDifference.acidity, 2).text, differenceValue: (record) => record.previousDifference.acidity },
-  acidityPrediction: { label: "収穫時予測", width: 96, tone: "acidity", value: (record) => displayPrediction(record.prediction?.metrics.クエン酸, 2) },
-  brixAcidityRatio: { label: "糖酸比", width: 62, value: (record) => displayNumber(record.brixAcidityRatio, 1) },
-  brixAcidityRatioDifference: { label: "前回差", width: 58, value: (record) => formatDifference(record.previousDifference.brixAcidityRatio, 1).text, differenceValue: (record) => record.previousDifference.brixAcidityRatio },
-  rainfall30Days: { label: "30日降水量", width: 88, value: (record, context) => displayWeather(aggregateWeather30Days({ measuredAt: record.measuredAt, precipitationStationId: context.rainfallStation, temperatureStationId: "kawabe", records: context.weatherRecords }).precipitation, 1) },
-  temperature30Days: { label: "30日平均気温", width: 96, value: (record, context) => displayWeather(aggregateWeather30Days({ measuredAt: record.measuredAt, precipitationStationId: context.rainfallStation, temperatureStationId: "kawabe", records: context.weatherRecords }).meanTemperature, 1) },
-  minimumDiameter: { label: "最小横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterMinimum, 1) },
-  minimumDiameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterMinimum, 1).text, differenceValue: (record) => record.previousDifference.diameterMinimum },
-  maximumDiameter: { label: "最大横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterMaximum, 1) },
-  maximumDiameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterMaximum, 1).text, differenceValue: (record) => record.previousDifference.diameterMaximum },
-};
-
-const initialColumns = Object.fromEntries(
-  (Object.keys(columns) as ColumnKey[]).map((column) => [column, true]),
-) as Record<ColumnKey, boolean>;
+const fiscalMonthOrder = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
 
 const AnalysisRow = ({ context, record, visibleColumns }: { context: ColumnContext; record: PeriodicAnalysisRow; visibleColumns: ColumnKey[] }) => (
   <div className="analysis-row">
     <div className="analysis-identity" title={`${record.orchard ?? "—"}${record.treatment ? `／${record.treatment}` : ""}${record.originalOrchard && record.originalOrchard !== record.orchard ? `（Input: ${record.originalOrchard}）` : ""}`}>
-      <span title={record.measuredAt}>{displayDay(record.measuredAt)}</span><span>{record.orchard ? `${record.orchard}${record.treatment ? `／${record.treatment}` : ""}` : "—"}</span>
+      <span title={record.measuredAt}>{displayDay(record.measuredAt)}</span>
+      {record.treatment ? (
+        <div className="analysis-orchard-stack">
+          <span className="analysis-orchard-name">{record.orchard ?? "—"}</span>
+          <span className="analysis-treatment">{record.treatment}</span>
+        </div>
+      ) : (
+        <span>{record.orchard ?? "—"}</span>
+      )}
     </div>
     <div className="analysis-values" style={{ gridTemplateColumns: visibleColumns.map((column) => `${columns[column].width}px`).join(" ") }}>
         {visibleColumns.map((column) => {
@@ -123,7 +86,7 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
     <header className="analysis-title"><Link className="home-link" href="/">← ホーム</Link><p className="eyebrow">ANALYSIS</p><h1>定期調査分析</h1></header>
     <section className="analysis-filters" aria-label="検索条件">
       <label>品種<select value={query.varietyCategory} onChange={(event) => setQuery({ ...query, varietyCategory: event.target.value })}>{categoryOptions.map((category) => <option key={category}>{category}</option>)}</select></label>
-      <label>月<select value={query.month} onChange={(event) => setQuery({ ...query, month: Number(event.target.value) })}>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}月</option>)}</select></label>
+      <label>月<select value={query.month} onChange={(event) => setQuery({ ...query, month: Number(event.target.value) })}>{fiscalMonthOrder.map((month) => <option key={month} value={month}>{month}月</option>)}</select></label>
       <fieldset><legend>区分</legend><label><input checked={query.half === "前半"} name="half" type="radio" value="前半" onChange={() => setQuery({ ...query, half: "前半" })} />前半</label><label><input checked={query.half === "後半"} name="half" type="radio" value="後半" onChange={() => setQuery({ ...query, half: "後半" })} />後半</label></fieldset>
       <label className="analysis-rainfall-station">降水地点<select value={rainfallStation} onChange={(event) => setRainfallStation(event.target.value as RainfallStation)}><option value="yuasa">湯浅</option><option value="kawabe">川辺</option></select></label>
     </section>

@@ -5,9 +5,9 @@ import { loadNormalizedAnalysisRecords } from "./normalized-analysis-records";
 const record = { orchard: "原名", treatment: "元処理" } as AnalysisDataRecord;
 
 describe("loadNormalizedAnalysisRecords", () => {
-  it("applies a confirmed mapping", async () => {
+  it("applies a confirmed mapping, keeping the record's own treatment", async () => {
     await expect(loadNormalizedAnalysisRecords([record], { loadMappings: async () => [{ originalOrchard: "原名", officialOrchard: "正式名", treatment: "処理A", status: "確認済み", precipitationStation: null, temperatureStation: null }], logError: vi.fn() })).resolves.toMatchObject({
-      records: [{ orchard: "正式名", treatment: "処理A", originalOrchard: "原名" }], orchardMasterWarning: null,
+      records: [{ orchard: "正式名", treatment: "元処理", originalOrchard: "原名" }], orchardMasterWarning: null,
     });
   });
 
