@@ -1,6 +1,6 @@
 # Output 実装状況
 
-最終確認日: 2026-08-05
+最終確認日: 2026-08-05（AI Project Starter v4.5 既存プロジェクト導入時に更新）
 
 ## 現在の骨格
 
@@ -15,6 +15,9 @@
 | 調査データRepository | 実装済み（見出し名解決・変換・基本バリデーション） |
 | Prediction Engine | 実装済み（予測モデルマスタ・予測係数マスタから収穫時予測を計算し、定期調査分析・各種予測画面へ統合） |
 | Prediction Master Writer | 実装済み（CLIスクリプト経由。Reader/Writer資格情報分離、原子的batch更新、状態不明時のフェイルセーフ対応。詳細は `docs/prediction-master-writer.md`） |
+| Cloud Run + IAP ホスティング | 設計・Dockerfileは実装済み、実運用デプロイ（Cloud資源作成）は未実施 |
+
+詳細な実装フェーズと今後の計画は [../ROADMAP.md](../ROADMAP.md)、技術的負債は同ファイルの「技術的負債」節を参照してください。
 
 ## 除去した Input の責務
 
