@@ -6,6 +6,7 @@ import {
   type AnalysisInclusionOptions,
 } from "../contracts/analysis-data";
 import { AnalysisDataError } from "./analysis-data-error";
+import { resolveSheetsCalendarDate } from "./sheets-calendar-date";
 
 const analysisDataTabName = "調査データ";
 const requiredHeaders = Object.values(analysisDataHeaders);
@@ -145,179 +146,28 @@ export class AnalysisDataRepository {
     if (value === null || value === undefined || value === "") {
       return null;
     }
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (!trimmed) return null;
-
-      const gviz = /^Date\((\d{4}),(\d{1,2}),(\d{1,2})\)$/.exec(trimmed);
-      if (gviz) {
-        return this.registeredCalendarDate(
-          Number(gviz[1]),
-          Number(gviz[2]) + 1,
-          Number(gviz[3]),
-          header,
-          rowNumber,
-        );
-      }
-
-      const calendar = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
-        ?? /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(trimmed);
-      if (calendar) {
-        return this.registeredCalendarDate(
-          Number(calendar[1]),
-          Number(calendar[2]),
-          Number(calendar[3]),
-          header,
-          rowNumber,
-        );
-      }
-
-      const zoned = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(Z|[+-]\d{2}:\d{2})$/.exec(trimmed);
-      if (zoned) {
-        this.registeredCalendarDate(
-          Number(zoned[1]),
-          Number(zoned[2]),
-          Number(zoned[3]),
-          header,
-          rowNumber,
-        );
-        const hour = Number(zoned[4]);
-        const minute = Number(zoned[5]);
-        const second = Number(zoned[6] ?? "0");
-        const offset = zoned[8];
-        const offsetHour = offset === "Z" ? 0 : Number(offset.slice(1, 3));
-        const offsetMinute = offset === "Z" ? 0 : Number(offset.slice(4, 6));
-        if (
-          hour > 23 || minute > 59 || second > 59
-          || offsetHour > 14 || offsetMinute > 59
-          || (offsetHour === 14 && offsetMinute !== 0)
-        ) {
-          throw this.invalidRegisteredAt(header, rowNumber);
-        }
-        const instant = new Date(trimmed);
-        if (Number.isNaN(instant.getTime())) throw this.invalidRegisteredAt(header, rowNumber);
-        const parts = new Intl.DateTimeFormat("en-US", {
-          timeZone: "Asia/Tokyo",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        }).formatToParts(instant);
-        const part = (type: Intl.DateTimeFormatPartTypes): string =>
-          parts.find((item) => item.type === type)?.value ?? "";
-        return `${part("year")}-${part("month")}-${part("day")}`;
-      }
+    if (typeof value === "string" && !value.trim()) {
+      return null;
     }
-    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
-      const milliseconds = Date.UTC(1899, 11, 30) + Math.floor(value) * 86_400_000;
-      const date = new Date(milliseconds);
-      if (!Number.isNaN(date.getTime())) {
-        const iso = date.toISOString();
-        if (/^\d{4}-\d{2}-\d{2}T/.test(iso)) return iso.slice(0, 10);
-      }
-    }
-    throw this.invalidRegisteredAt(header, rowNumber);
+    return resolveSheetsCalendarDate(
+      value,
+      { trimBeforeMatching: true, allowFractionalSerial: true, requireNonNegativeSerial: true, validateIsoDatePrefix: true },
+      () => { throw this.invalidRegisteredAt(header, rowNumber); },
+    );
   }
 
   private invalidRegisteredAt(header: string, rowNumber: number): Error {
     return new Error(`調査データ ${rowNumber}行目の「${header}」を有効な暦日へ変換できません。`);
   }
 
-  private registeredCalendarDate(
-    year: number,
-    month: number,
-    day: number,
-    header: string,
-    rowNumber: number,
-  ): string {
-    const date = new Date(0);
-    date.setUTCHours(0, 0, 0, 0);
-    date.setUTCFullYear(year, month - 1, day);
-    if (
-      date.getUTCFullYear() !== year
-      || date.getUTCMonth() !== month - 1
-      || date.getUTCDate() !== day
-    ) {
-      throw this.invalidRegisteredAt(header, rowNumber);
-    }
-    return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  }
-
   private optionalMeasuredAt(value: unknown, rowNumber: number): string | null {
     if (value === null || value === undefined) return null;
-    if (typeof value === "string") {
-      if (!value.trim()) return null;
-
-      const gviz = /^Date\((\d{4}),(\d{1,2}),(\d{1,2})\)$/.exec(value);
-      if (gviz) {
-        return this.calendarDate(
-          Number(gviz[1]),
-          Number(gviz[2]) + 1,
-          Number(gviz[3]),
-          rowNumber,
-        );
-      }
-
-      const calendar = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-        ?? /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(value);
-      if (calendar) {
-        return this.calendarDate(
-          Number(calendar[1]),
-          Number(calendar[2]),
-          Number(calendar[3]),
-          rowNumber,
-        );
-      }
-
-      const zoned = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(Z|[+-]\d{2}:\d{2})$/.exec(value);
-      if (zoned) {
-        this.calendarDate(Number(zoned[1]), Number(zoned[2]), Number(zoned[3]), rowNumber);
-        const hour = Number(zoned[4]);
-        const minute = Number(zoned[5]);
-        const second = Number(zoned[6] ?? "0");
-        const offset = zoned[8];
-        const offsetHour = offset === "Z" ? 0 : Number(offset.slice(1, 3));
-        const offsetMinute = offset === "Z" ? 0 : Number(offset.slice(4, 6));
-        if (
-          hour > 23 || minute > 59 || second > 59 ||
-          offsetHour > 14 || offsetMinute > 59 ||
-          (offsetHour === 14 && offsetMinute !== 0)
-        ) {
-          throw this.invalidMeasuredAt(rowNumber);
-        }
-        const instant = new Date(value);
-        if (Number.isNaN(instant.getTime())) throw this.invalidMeasuredAt(rowNumber);
-        const parts = new Intl.DateTimeFormat("en-US", {
-          timeZone: "Asia/Tokyo",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        }).formatToParts(instant);
-        const part = (type: Intl.DateTimeFormatPartTypes): string =>
-          parts.find((item) => item.type === type)?.value ?? "";
-        return `${part("year")}-${part("month")}-${part("day")}`;
-      }
-      throw this.invalidMeasuredAt(rowNumber);
-    }
-
-    if (typeof value === "number" && Number.isFinite(value) && Number.isInteger(value)) {
-      const date = new Date(Date.UTC(1899, 11, 30) + value * 86_400_000);
-      if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10);
-    }
-    throw this.invalidMeasuredAt(rowNumber);
-  }
-
-  private calendarDate(year: number, month: number, day: number, rowNumber: number): string {
-    const date = new Date(0);
-    date.setUTCHours(0, 0, 0, 0);
-    date.setUTCFullYear(year, month - 1, day);
-    if (
-      date.getUTCFullYear() !== year ||
-      date.getUTCMonth() !== month - 1 ||
-      date.getUTCDate() !== day
-    ) {
-      throw this.invalidMeasuredAt(rowNumber);
-    }
-    return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    if (typeof value === "string" && !value.trim()) return null;
+    return resolveSheetsCalendarDate(
+      value,
+      { trimBeforeMatching: false, allowFractionalSerial: false, requireNonNegativeSerial: false, validateIsoDatePrefix: false },
+      () => { throw this.invalidMeasuredAt(rowNumber); },
+    );
   }
 
   private invalidMeasuredAt(rowNumber: number): AnalysisDataError {
