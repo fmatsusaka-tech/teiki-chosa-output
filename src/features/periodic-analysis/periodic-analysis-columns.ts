@@ -2,11 +2,20 @@ import type { PeriodicAnalysisRow } from "./periodic-analysis.types";
 import { formatDifference } from "./periodic-analysis-display";
 import type { PredictionMetricResult } from "../prediction-integration/prediction-integration.types";
 import { aggregateWeather30Days, type DailyWeatherRecord, type WeatherMetricOutcome } from "../weather/weather-30-day";
+import { getFruitSizeCategory } from "../shared/fruit-size";
 
 export const displayNumber = (value: number | null, digits: number): string => value === null ? "—" : value.toFixed(digits);
 export const displayPrediction = (result: PredictionMetricResult | undefined, digits: number): string => {
   if (!result) return "—";
   return result.ok ? result.predictedValue.toFixed(digits) : `— ${result.message}`;
+};
+/** Displays the diameter prediction with its size category, classified from the unrounded prediction. */
+export const displayDiameterPrediction = (result: PredictionMetricResult | undefined, digits: number): string => {
+  if (!result) return "—";
+  if (!result.ok) return `— ${result.message}`;
+  const category = getFruitSizeCategory(result.rawPrediction);
+  const value = `${result.predictedValue.toFixed(digits)}mm`;
+  return category ? `${value}（${category}）` : value;
 };
 export const displayDay = (value: string): string => {
   const match = /^\d{4}-(\d{2})-(\d{2})$/.exec(value);
@@ -31,7 +40,7 @@ export const displayWeather = (outcome: WeatherMetricOutcome, digits: number): s
 export const columns: Record<ColumnKey, { label: string; width: number; tone?: MetricTone; value: (record: PeriodicAnalysisRow, context: ColumnContext) => string; differenceValue?: (record: PeriodicAnalysisRow) => number | null }> = {
   diameter: { label: "平均横径", width: 70, tone: "diameter", value: (record) => displayNumber(record.diameterAverage, 1) },
   diameterDifference: { label: "前回差", width: 58, tone: "diameter", value: (record) => formatDifference(record.previousDifference.diameterAverage, 1).text, differenceValue: (record) => record.previousDifference.diameterAverage },
-  diameterPrediction: { label: "収穫時予測", width: 96, tone: "diameter", value: (record) => displayPrediction(record.prediction?.metrics.横径, 1) },
+  diameterPrediction: { label: "収穫時予測", width: 96, tone: "diameter", value: (record) => displayDiameterPrediction(record.prediction?.metrics.横径, 1) },
   brix: { label: "糖度", width: 58, tone: "brix", value: (record) => displayNumber(record.brix, 1) },
   brixDifference: { label: "前回差", width: 58, tone: "brix", value: (record) => formatDifference(record.previousDifference.brix, 1).text, differenceValue: (record) => record.previousDifference.brix },
   brixPrediction: { label: "収穫時予測", width: 96, tone: "brix", value: (record) => displayPrediction(record.prediction?.metrics.糖度, 1) },

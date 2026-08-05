@@ -5,116 +5,94 @@ Claude、Codex、人間の間で共有する作業引き継ぎファイルです
 
 ## Active Work
 
-- Issue: [#111](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/111) AI Project Starter v4.5を既存プロジェクト導入モードで導入する
-- Branch: `chore/adopt-ai-project-starter-v4.5`
+- Issue: [#113](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/113) 横径予測値に果実サイズ区分を表示する
+- Branch: `feature/diameter-prediction-fruit-size`
 - Primary agent: Claude(実装)
-- Reviewer: 未実施（Review Level: Low、詳細は下記）
-- Status: origin/main取り込み・文書最新化・PR #112作成・CI green確認済み。Ownerによるマージ可否判断待ち
-- Last updated: 2026-08-05
+- Reviewer: 未実施（Review Level: Standard、詳細は下記）
+- Status: 実装・テスト・ローカル検証完了。PR作成待ち
+- Last updated: 2026-08-06
 
 ## Goal and Acceptance Criteria
 
-- Goal: AI Project Starter v4.5を既存プロジェクト導入モード（`docs/agents/ADOPT_EXISTING_PROJECT.md`）で導入し、文書と実装の乖離を解消する。アプリの挙動は変更しない。
+- Goal: 横径予測値の表示を数値のみ（例: `64.2`）から、mm単位＋果実サイズ区分併記（例: `64.2mm（M）`）へ変更する。既存の予測計算ロジックは変更しない。
 - Acceptance criteria:
-  - [x] README / VISION.md / REQUIREMENTS.md / ARCHITECTURE.md / ROADMAP.md を現状実装に合わせて整備
-  - [x] AGENTS.md / CLAUDE.md / docs/agents/HANDOFF.md を導入（既存のSpreadsheet境界・開発ルールを維持）
-  - [x] ドキュメントと実装の乖離を整理
-  - [x] 実装済み・未実装・対象外機能を整理（REQUIREMENTS.md / ROADMAP.md / docs/implementation-status.md）
-  - [x] package-lock.json問題など技術的負債を記録（ROADMAP.mdの「技術的負債」）
-  - [x] Issueを整理（#22, #72, #97との関係、および既存の全体監査レポートとの関係をROADMAP.mdに記録）
-  - [x] check:starterと最小限のCIステップを既存の検証を壊さない形で導入
-  - [x] PR作成（[#112](https://github.com/fmatsusaka-tech/teiki-chosa-output/pull/112)）、CI green確認
-  - [ ] Ownerによるマージ可否判断
+  - [x] サイズ判定を共通関数化（`src/features/shared/fruit-size.ts`の`getFruitSizeCategory`）し、閾値を一元管理
+  - [x] サイズ判定は表示用に丸めた値ではなく生の予測値(`rawPrediction`)で行う
+  - [x] 数値がnull/undefined/NaNの場合はサイズを表示しない
+  - [x] 定期調査分析画面の「収穫時予測」列（横径のみ）に反映
+  - [x] `/predictions`仮定値シミュレーターの横径予測表示に反映
+  - [x] 糖度・クエン酸の予測表示、横径の実測値表示は変更しない
+  - [x] 指定された12件の境界値 + null/undefined/NaNのテストを追加
+  - [x] typecheck / lint / test / build 確認
+  - [ ] PR作成、CI green確認、レビュー、マージ
 
 ## Scope
 
 ### Change
 
-- ルート文書: `README.md`, `VISION.md`, `REQUIREMENTS.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `AGENTS.md`, `CLAUDE.md`
-- `docs/implementation-status.md`（内容更新）
-- `docs/agents/`配下の新規導入（`ADOPT_EXISTING_PROJECT.md`, `BOOTSTRAP.md`, `COLLABORATION.md`, `DESIGN_REVIEW_CHECKLIST.md`, `REVIEW_CHECKLIST.md`, `REPOSITORY_AUDIT_GUIDE.md`, `HANDOFF.md`）
-- `scripts/check-project-initialized.mjs` と対応するテスト、`package.json`の`check:starter`スクリプト
-- `.github/workflows/ci.yml`（`check:starter`ステップの追加のみ）
+- `src/features/shared/fruit-size.ts`（新規）: `FruitSizeCategory`型、閾値テーブル、`getFruitSizeCategory`
+- `src/features/shared/fruit-size.test.ts`（新規）: 境界値12件 + null/undefined/NaN
+- `src/features/periodic-analysis/periodic-analysis-columns.ts`: `displayDiameterPrediction`を追加し、`diameterPrediction`列をこれに差し替え
+- `src/features/periodic-analysis/periodic-analysis-columns.test.ts`（新規）: `displayDiameterPrediction`の表示フォーマットテスト
+- `src/app/predictions/prediction-dashboard.tsx`: 横径の予測値表示にサイズ区分を追加（糖度・クエン酸は変更なし）
+- `docs/prediction-mvp.md`: 横径予測のサイズ区分併記仕様を追記
 
 ### Do not change
 
-- `src/`配下のアプリケーションコード、既存の`typecheck` / `lint` / `test` / `build`の内容（本Issueはアプリの挙動を変更しない）
-- 既存の3件のOpen Issue（#22, #72, #97）自体のクローズ・内容変更（整理・参照のみ行い、判断はOwnerに委ねる）
-- `docs/audit/REPOSITORY_AUDIT.md`の内容（既存の全体監査レポート。参照のみ）
+- `calculatePrediction` / `roundPredictionForDisplay`（既存の予測計算ロジック）
+- 糖度・クエン酸の予測表示
+- 横径の実測値表示（`diameter` / `minimumDiameter` / `maximumDiameter`列、園地分析・2園地比較の各列）
+- `orchard-analysis-client.tsx`の「予測横径」列（常に「—」のプレースホルダで実データ未接続のため対象外）
 
 ## Work Completed
 
-- リポジトリ、remote（`origin`のみ、`legacy`remoteは別作業で削除済み）、branch、git statusを確認
-- 導入前のベースライン検証を記録: `typecheck` green、`lint` green、`test` 432件green、`build` green、`npm audit` High 4件
-- `src/app`, `src/features`, `src/server`を調査し、実装済み/未実装機能を復元
-- 復旧用tag `pre-starter-adoption-v4.5` を導入前の`origin/main`(f710aa7)へ作成・push
-- Issue #111、branch `chore/adopt-ai-project-starter-v4.5` を作成
-- README / VISION.md / REQUIREMENTS.md / ARCHITECTURE.md / ROADMAP.md / docs/implementation-status.md を新規作成・更新
-- AGENTS.md（既存のSpreadsheet境界・開発ルールを維持しつつv4.5のProject Profile・Review Level・レビュー独立性ルールを統合）、CLAUDE.md、`docs/agents/`配下を導入
-- `scripts/check-project-initialized.mjs`（既存プロジェクト導入向けに`docs/input`必須チェックを除外して適応）とテストを追加、`package.json`に`check:starter`を追加、CIへ非破壊的に追加
-- **作業途中でorigin/mainが33コミット先行していることを検知**（他セッションによる並行作業）。`git merge origin/main`で取り込み、`docs/implementation-status.md`の1件の競合を解決。取り込んだ変更には、既存の全体監査レポート追加（#102, `docs/audit/REPOSITORY_AUDIT.md`）とその指摘への対応（#99–#110）が含まれていたため、本Issueの文書（ROADMAP.md / REQUIREMENTS.md / ARCHITECTURE.md / README.md）を再調査し、以下を反映して更新した。
-  - データ管理画面は実装済み（骨格のみという当初の記載は誤りだった）
-  - 旧GViz読取実装は削除済み（`src/repositories/google-sheets-analysis-data-source.ts`は存在しない）
-  - `docs/audit/REPOSITORY_AUDIT.md`が既に存在するため、技術的負債の記載を重複させず同レポートを参照する形に整理
-  - npm audit Highは4件→3件（brace-expansionは#110で対応済み）
-  - **Cloud Run + IAPの実運用デプロイ状況が`docs/cloud-run-hosting.md`（未デプロイの前提）と`docs/audit/REPOSITORY_AUDIT.md`（稼働中・main push即デプロイの前提）で矛盾していることを発見**。本Issueの範囲では実際の状態を確認できず、未決事項として記録した
-- マージ後、`npm install` / `typecheck` / `lint` / `test` / `build` / `check:starter`を再実行しすべてgreenを確認
+- 横径予測の計算箇所（`prediction-engine.ts`, `prediction-integration.ts`, `prediction-simulator.ts`）と表示箇所を調査。単位はmmで統一済み、cm/mm混在なしを確認
+- 横径予測を表示する画面を全数調査（定期調査分析の収穫時予測列、`/predictions`シミュレーター）。園地分析・2園地比較・CSV/PDF/コピー出力は対象外であることを確認
+- Issue #113、branch `feature/diameter-prediction-fruit-size` を作成
+- `getFruitSizeCategory`を実装し、閾値（3S/2S/S/M/L/2L/3L、下限含む・上限含まない）を一元管理
+- `displayDiameterPrediction`（定期調査分析）と`displayDiameterPredictionValue`（`/predictions`シミュレーター、コンポーネント内ローカル関数）を実装し、いずれも`rawPrediction`（生の予測値）でサイズ判定
+- 指定された境界値12件・null・undefined・NaNのテストを`fruit-size.test.ts`に追加。`periodic-analysis-columns.test.ts`を新規追加し、丸め後にサイズ境界をまたぐケース（66.96→表示67.0だが生値は67.0未満のためM）も検証
+- `docs/prediction-mvp.md`にサイズ区分併記の仕様を追記
 
 ## Files Changed
 
-- `README.md`, `VISION.md`, `REQUIREMENTS.md`, `ARCHITECTURE.md`, `ROADMAP.md`
-- `AGENTS.md`, `CLAUDE.md`
-- `docs/implementation-status.md`
-- `docs/agents/ADOPT_EXISTING_PROJECT.md`, `docs/agents/BOOTSTRAP.md`, `docs/agents/COLLABORATION.md`, `docs/agents/DESIGN_REVIEW_CHECKLIST.md`, `docs/agents/REVIEW_CHECKLIST.md`, `docs/agents/REPOSITORY_AUDIT_GUIDE.md`, `docs/agents/HANDOFF.md`
-- `scripts/check-project-initialized.mjs`, `scripts/check-project-initialized.test.mjs`
-- `package.json`（`check:starter`スクリプト追加）
-- `.github/workflows/ci.yml`（`check:starter`ステップ追加）
+- `src/features/shared/fruit-size.ts`, `src/features/shared/fruit-size.test.ts`
+- `src/features/periodic-analysis/periodic-analysis-columns.ts`, `src/features/periodic-analysis/periodic-analysis-columns.test.ts`
+- `src/app/predictions/prediction-dashboard.tsx`
+- `docs/prediction-mvp.md`
+- `docs/agents/HANDOFF.md`
 
 ## Verification Evidence
 
 | Command / check | Result | Notes |
 |---|---|---|
-| `npm run typecheck`(導入前ベースライン、f710aa7) | Green | |
-| `npm run lint`(導入前ベースライン) | Green | |
-| `npm test`(導入前ベースライン) | Green | 31 files / 432 tests |
-| `npm run build`(導入前ベースライン) | Green | |
-| `npm audit`(導入前ベースライン) | High 4件 | |
-| `npm run check:starter`(origin/mainマージ後) | Green | |
-| `npm run typecheck`(origin/mainマージ後) | Green | |
-| `npm run lint`(origin/mainマージ後) | Green | |
-| `npm test`(origin/mainマージ後) | Green | 36 files / 469 tests |
-| `npm run build`(origin/mainマージ後) | Green | |
-| `npm audit`(origin/mainマージ後) | High 3件 | Issue #97で追跡中、`next@16`系アップグレードが必要 |
-| CI (`ci.yml`, PR #112) | Green | 全ステップ（check:starter含む）成功 |
+| `npm run typecheck` | Green | |
+| `npm run lint` | Green | |
+| `npm test` | Green | 38 files / 488 tests（新規19件: fruit-size 15件、periodic-analysis-columns 4件） |
+| `npm run build` | Green | |
+| CI (`ci.yml`) | (PR作成後に記録) | |
 
 ## Decisions Made
 
-- Decision: root直下に作っていた`HANDOFF.md`（legacy remote削除作業の記録）は削除し、内容を`docs/agents/HANDOFF.md`とREADME.mdの「リポジトリ」節に統合した。
-- Reason: v4.5導入により`docs/agents/HANDOFF.md`が正本のHANDOFF配置になるため、root直下に別のHANDOFFファイルを残すと二重管理になる。
-- Decision: `scripts/check-project-initialized.mjs`から、starter付属の`docs/input`必須チェック（要件原文の保全確認）を除外した。
-- Reason: 本リポジトリはBootstrapではなく既存プロジェクト導入モードで初期化しており、`docs/input/`に保全すべき要件原文が存在しない。
-- Decision: `docs/agents/REPOSITORY_AUDIT_GUIDE.md`をv4.4の内容のまま導入した。
-- Reason: 配布されたv4.5パッケージには本ファイルが含まれていなかったが、v4.5のCLAUDE.md/AGENTS.mdの記述から本ファイルへの参照が存在し、内容自体はバージョン間で変更されていないため。
-- Decision: 本Issueの「技術的負債」記載は、既存の`docs/audit/REPOSITORY_AUDIT.md`と重複させず、同レポートで扱われていない項目（package-lock.json整合性検証の欠如、Cloud Runデプロイ状況の矛盾）のみを追記する形にした。
-- Reason: origin/mainマージ時に、2026-08-04付けで既に詳細な全体監査が実施済みであることが判明したため。本Issueで独自に劣化コピーを作ると二重管理・将来の乖離リスクになる。
-- Related ADR: なし（運用文書の追加であり、アプリケーションのアーキテクチャ変更を伴わないためADR対象外と判断）
+- Decision: サイズ判定は`predictedValue`（丸め後）ではなく`rawPrediction`（生の予測値）を使う。
+- Reason: Issue #113の要件どおり。丸めによって境界をまたぐケース（例: 生値66.96mmは丸めると67.0mmと表示されるが、67.0mm未満なのでMに分類すべき）を誤判定しないため。
+- Decision: `/predictions`側は`periodic-analysis-columns.ts`の関数を直接importせず、`prediction-dashboard.tsx`内にローカルの薄い表示関数を置いた。
+- Reason: 両者は異なる型（`PredictionMetricResult` vs `PredictionSimulationMetricResult`）を扱っており、共通化すべきはサイズ判定そのもの（`getFruitSizeCategory`）であって、feature間をまたぐ表示関数の共有はモジュール境界を曖昧にすると判断した。
+- Related ADR: なし（表示ロジックの追加であり、外部依存やアーキテクチャ変更を伴わないためADR対象外と判断）
 
 ## Open Questions and Risks
 
-- **Cloud Run + IAPの実運用デプロイ状況が未確認**（`docs/cloud-run-hosting.md`と`docs/audit/REPOSITORY_AUDIT.md`の記述が矛盾）。次にこのリポジトリを触るエージェントは、mainへの変更が本番へ即時反映される可能性を前提に慎重に扱うこと。Ownerに実際の状態を確認してもらうことを推奨。
-- Issue #22（Input正本の公開GViz依存を認証付き読取へ移行する）は、Output側コード（旧GViz実装・ハードコードID）は#100で削除済みだが、Input側Drive ACL（リンク共有の解除）の確認が残っている可能性があり、Issueは依然Open。
-- Issue #72（Input側変更影響報告）は、対応先の#69が実装・クローズ済みのため、#72自体をクローズしてよいかはOwnerの判断に委ねた（本Issueではクローズしていない）。
-- `docs/audit/REPOSITORY_AUDIT.md`のMedium項目（M-1, M-2, M-3, M-7）と`globals.css`の残り分割（M-6の一部）は未着手のまま。Issue化は本Issueの範囲外とした。
+- 「収穫時予測」列の表示文字列が長くなる（例: `64.2mm（M）`）が、列幅（96px）は変更していない。既存の失敗時メッセージ（例: `— 品種が入力されていません。`）は元々この幅を超えており、既存のCSSでの折り返し/省略に委ねている。見た目の調整が必要であれば別Issueで対応する。
+- 果実サイズの閾値は本Issueの指定値をそのまま実装した。将来基準が変わる場合は`src/features/shared/fruit-size.ts`の閾値テーブルのみを変更すればよい。
 
 ## Exact Next Step
 
-1. 本Issue用のPRを作成し、`npm run check:starter`を含む全検証を実行してCI greenを確認する。
-2. Ownerへマージ可否を確認し、特にCloud Runデプロイ状況の矛盾について実際の状態を確認してもらう。
-3. 承認後にマージする。全体監査は既に`docs/audit/REPOSITORY_AUDIT.md`として実施済みのため、次はその未着手項目（Medium群、`next@16`アップグレード）のIssue化・対応を検討する。
+1. 本Issue用のPRを作成し、CI green確認する。
+2. 独立レビュー（Review Level: Standard、PR差分・関連コード・テスト・受け入れ条件を確認）を実施する。
+3. Approve後にマージする。
 
 ## Read First
 
 - `AGENTS.md`
-- `docs/agents/ADOPT_EXISTING_PROJECT.md`
-- `docs/audit/REPOSITORY_AUDIT.md`（既存の全体監査レポート、未着手項目あり）
-- `ROADMAP.md`（技術的負債・Issue整理）
+- `docs/prediction-mvp.md`
+- `src/features/shared/fruit-size.ts`
