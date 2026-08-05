@@ -14,8 +14,8 @@ Input（[teiki-chosa-input](https://github.com/fmatsusaka-tech/teiki-chosa-input
 
 ## 実装状況
 
-- 定期調査分析・園地分析・各種予測（横径/糖度/酸度の統合ダッシュボード）は実データで実装済みです。
-- データ管理画面は骨格のみで、検索・確認機能は未実装です。
+- 定期調査分析・園地分析・各種予測（横径/糖度/酸度の統合ダッシュボード）・データ管理（開発者用データチェック機能）はいずれも実データで実装済みです。
+- 2026-08-04付けで [docs/audit/REPOSITORY_AUDIT.md](docs/audit/REPOSITORY_AUDIT.md) による全体監査が実施され、Critical/High指摘の大半は対応済みです。
 
 詳細な機能単位の状況は [docs/implementation-status.md](docs/implementation-status.md)、実装フェーズと技術的負債は [ROADMAP.md](ROADMAP.md) を参照してください。
 
@@ -70,14 +70,15 @@ npm run prediction:mvp:verify
 
 ## デプロイ状況
 
-Google Cloud Run + Identity-Aware Proxyを前提とした設計・Dockerfileは実装済みですが、実際のCloud資源作成・本番デプロイは別の運用Issueで扱われており未実施です。詳細は [docs/cloud-run-hosting.md](docs/cloud-run-hosting.md) を参照してください。
+Google Cloud Run + Identity-Aware Proxyを前提とした設計・Dockerfileは実装済みです。実際にデプロイ済みかどうかは文書間で矛盾しており未確認です（[docs/cloud-run-hosting.md](docs/cloud-run-hosting.md) は未デプロイの前提、[docs/audit/REPOSITORY_AUDIT.md](docs/audit/REPOSITORY_AUDIT.md) は稼働中の前提。詳細は [ARCHITECTURE.md](ARCHITECTURE.md) の「ホスティング」を参照）。
 
 ## 既知の制約・技術的負債
 
-- npm audit High 4件（`next@16`系への破壊的アップグレードが必要、[Issue #97](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/97) で計画中）
+- npm audit High 3件（`next@16`系への破壊的アップグレードが必要、[Issue #97](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/97) で計画中）
 - package-lock.jsonの整合性を検証する早期CIステップが未整備
+- Cloud Run + IAPの実運用デプロイ状況が文書間で矛盾している（上記「デプロイ状況」参照）
 
-詳細は [ROADMAP.md](ROADMAP.md) の「技術的負債」を参照してください。
+その他の技術的負債は [docs/audit/REPOSITORY_AUDIT.md](docs/audit/REPOSITORY_AUDIT.md)、まとめは [ROADMAP.md](ROADMAP.md) の「技術的負債」を参照してください。
 
 ## エージェント向け文書
 

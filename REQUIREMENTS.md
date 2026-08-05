@@ -20,12 +20,13 @@
 - 予測原典 Spreadsheet（横径予測/糖度予測/酸度予測）の認証付き読取
 - Output専用 正規化予測マスタの読取（Reader）と、独立Issueで検証済みのWriter基盤
 - 気象データ（気象庁由来CSV、公開Google Sheetsエクスポート）の読取・30日集計
+- データ管理画面（`/data-management`）: 分析対象から除外されている行を理由付きで一覧表示する開発者用データチェック機能
 - ヘルスチェックAPI (`/api/health`)
-- Cloud Run + IAP を前提としたホスティング設計・Dockerfile（実運用デプロイは未実施、[ARCHITECTURE.md](ARCHITECTURE.md) 参照）
+- Cloud Run + IAP を前提としたホスティング設計・Dockerfile（実運用デプロイの有無は未確認、[ARCHITECTURE.md](ARCHITECTURE.md) 参照）
 
 ### 未実装
 
-- データ管理画面（`/data-management`）: 静的なプレースホルダのみで、検索・確認機能は未実装。
+現時点で判明している「画面骨格のみ」の機能はない。既知の未確定事項は「未決事項」を参照。
 
 ### 対象外（Inputの責務、Outputには実装しない）
 
@@ -60,7 +61,8 @@
 
 ## 未決事項
 
-- Cloud Run + IAPの実運用デプロイ時期（Cloud Billing、Artifact Registry、IAP、OAuth、IAM等の設定は別Issue）。
-- npm audit High 4件への対応（`next@16`系メジャーアップグレード、Issue #97で計画中）。
-- データ管理画面（`/data-management`）の要件は未定義（画面骨格のみ存在）。
+- **Cloud Run + IAPの実運用デプロイ状況が文書間で矛盾している**: `docs/cloud-run-hosting.md`は「Cloud Billing、Artifact Registry、Cloud Run等の作成は別の運用Issueで扱う」（未実施の前提）と記述する一方、`docs/audit/REPOSITORY_AUDIT.md`は「本番はCloud Run + IAPで保護され継続的デプロイ（main push→即デプロイ）が組まれている」（稼働中の前提）と記述している。本リポジトリの`.github/workflows/`にデプロイ用ワークフローは存在しないため、デプロイが行われているとすればCloud Build等のリポジトリ外の仕組みによるものと推測されるが、確認できていない。Ownerに実際の運用状態の確認を推奨する。
+- npm audit High 3件（`postcss`/`sharp`、`next`推移依存）への対応（`next@16`系メジャーアップグレード、Issue #97で計画中）。
 - 詳細な定量的成功指標（[VISION.md](VISION.md) 参照）は未設定。
+
+その他の未確定事項（データ品質・設計上の課題）は [docs/audit/REPOSITORY_AUDIT.md](docs/audit/REPOSITORY_AUDIT.md) を参照。

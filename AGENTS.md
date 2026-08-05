@@ -8,7 +8,7 @@
 - One-line purpose: Input正本（teiki-chosa-input）が管理する調査データを読取専用で分析・比較・予測する
 - Primary users: 松阪ファームの栽培管理・分析担当者（社内利用、一般公開はしない）
 - Primary completion condition: 定期調査分析・園地分析・各種予測（横径/糖度/酸度）が実データで動作し、Input正本への書込みが一切発生しないこと
-- Production or external effects: Google Sheets（Input正本の`調査データ`、予測原典、Output専用正規化予測マスタ）への読取。正規化予測マスタへの書込みはPrediction Master Writer経由に限定。Cloud Run + IAPでの本番運用を設計済みだが未デプロイ（詳細は[ARCHITECTURE.md](ARCHITECTURE.md)）
+- Production or external effects: Google Sheets（Input正本の`調査データ`、予測原典、Output専用正規化予測マスタ）への読取。正規化予測マスタへの書込みはPrediction Master Writer経由に限定。Cloud Run + IAPでの本番運用を前提とした設計は存在するが、実際にデプロイ済みかは文書間で矛盾しており未確認（詳細は[ARCHITECTURE.md](ARCHITECTURE.md)の「ホスティング」）。矛盾がある以上、mainへの変更が即座に本番へ反映される可能性を考慮して作業すること
 
 詳細は [VISION.md](VISION.md) / [REQUIREMENTS.md](REQUIREMENTS.md) / [ARCHITECTURE.md](ARCHITECTURE.md) / [ROADMAP.md](ROADMAP.md) を参照してください。
 
