@@ -7,8 +7,10 @@ Claude、Codex、人間の間で共有する作業引き継ぎファイルです
 - Issue: [#115](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/115) データ管理画面を読取専用の検索・採用状態確認へ拡張する
 - Branch: `codex/data-management-inventory-115`
 - Primary agent: Codex
+- Reviewer: Codex（単一担当環境で独立Reviewerを利用できないため同一担当で再レビュー）
 - Review Level: Standard（認証・Spreadsheetアクセス境界を変えない読取専用UIと純粋集計の追加）
-- Status: 実装・ローカル検証・Draft PR #116・CI完了。独立レビュー待ち
+- Review Result: Approve（blocking指摘なし）
+- Status: 実装・ローカル検証・Draft PR #116・CI・レビュー完了。マージ待ち
 - Last updated: 2026-08-11
 
 ## Goal and Acceptance Criteria
@@ -51,5 +53,5 @@ Claude、Codex、人間の間で共有する作業引き継ぎファイルです
 
 ## Exact Next Step
 
-1. 独立レビューを行い、blocking指摘を解消する。
-2. Approve後にReady化・Squash mergeする。
+1. 最終CIを確認する。
+2. Ready化・Squash mergeする。
