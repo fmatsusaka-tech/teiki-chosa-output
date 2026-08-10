@@ -20,7 +20,7 @@
 - 予測原典 Spreadsheet（横径予測/糖度予測/酸度予測）の認証付き読取
 - Output専用 正規化予測マスタの読取（Reader）と、独立Issueで検証済みのWriter基盤
 - 気象データ（気象庁由来CSV、公開Google Sheetsエクスポート）の読取・30日集計
-- データ管理画面（`/data-management`）: 分析対象から除外されている行を理由付きで一覧表示する開発者用データチェック機能
+- データ管理画面（`/data-management`）: 全レコードの有効・無効・標準分析への採用状態を検索・絞込みでき、両分析画面から除外されている行を理由付きで確認できる読取専用管理台帳
 - ヘルスチェックAPI (`/api/health`)
 - Cloud Run + IAP を前提としたホスティング設計・Dockerfile（実運用デプロイの有無は未確認、[ARCHITECTURE.md](ARCHITECTURE.md) 参照）
 

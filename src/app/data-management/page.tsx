@@ -9,6 +9,6 @@ const getPageData = async () => loadDataManagementPageData({
 });
 
 export default async function DataManagementPage() {
-  const { visibilitySummary, dataError } = await getPageData();
-  return <DataManagementClient dataError={dataError} visibilitySummary={visibilitySummary} />;
+  const { inventory, visibilitySummary, dataError } = await getPageData();
+  return <DataManagementClient dataError={dataError} inventory={inventory} visibilitySummary={visibilitySummary} />;
 }
