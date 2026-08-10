@@ -8,7 +8,7 @@ Claude、Codex、人間の間で共有する作業引き継ぎファイルです
 - Branch: `codex/data-management-inventory-115`
 - Primary agent: Codex
 - Review Level: Standard（認証・Spreadsheetアクセス境界を変えない読取専用UIと純粋集計の追加）
-- Status: 実装・ローカル検証完了。Draft PR作成待ち
+- Status: 実装・ローカル検証・Draft PR #116・CI完了。独立レビュー待ち
 - Last updated: 2026-08-11
 
 ## Goal and Acceptance Criteria
@@ -47,9 +47,9 @@ Claude、Codex、人間の間で共有する作業引き継ぎファイルです
 - `npm test`: Green（39ファイル、491テスト）
 - `npm run build`: Green
 - `git diff --check`: Green
+- CI `verify`: Green（Draft PR #116）
 
 ## Exact Next Step
 
-1. commit、push、Draft PR、CI確認を行う。
-2. 独立レビューを行い、blocking指摘を解消する。
-3. Approve後にReady化・Squash mergeする。
+1. 独立レビューを行い、blocking指摘を解消する。
+2. Approve後にReady化・Squash mergeする。
