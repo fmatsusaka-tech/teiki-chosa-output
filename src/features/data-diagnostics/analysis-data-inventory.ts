@@ -38,6 +38,11 @@ export type AnalysisDataInventoryFilter = {
   dataStatus: string;
 };
 
+const inputEditBaseUrl = "https://teiki-chosa-input.onrender.com/edit/";
+
+export const buildInputEditUrl = (registrationId: string): string =>
+  `${inputEditBaseUrl}${encodeURIComponent(registrationId)}`;
+
 export const filterAnalysisDataInventoryEntries = (
   entries: readonly AnalysisDataInventoryEntry[],
   filter: AnalysisDataInventoryFilter,

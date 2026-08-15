@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { buildAnalysisDataInventory, filterAnalysisDataInventoryEntries } from "./analysis-data-inventory";
+import { buildAnalysisDataInventory, buildInputEditUrl, filterAnalysisDataInventoryEntries } from "./analysis-data-inventory";
 
 const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => ({
   id: "id-1", registeredAt: null, measuredAt: "2026-07-01", fiscalYear: 2026, year: 2026, month: 7,
@@ -31,6 +31,13 @@ describe("filterAnalysisDataInventoryEntries", () => {
     const july = { ...baseFilter, year: "2026", month: "07" };
     expect(filterAnalysisDataInventoryEntries(entries, { ...july, period: "first" }).map(({ id }) => id)).toEqual(["first"]);
     expect(filterAnalysisDataInventoryEntries(entries, { ...july, period: "second" }).map(({ id }) => id)).toEqual(["second"]);
+  });
+});
+
+describe("buildInputEditUrl", () => {
+  it("passes only the encoded registration ID to the Input edit screen", () => {
+    expect(buildInputEditUrl("legacy/id 1")).toBe("https://teiki-chosa-input.onrender.com/edit/legacy%2Fid%201");
+    expect(buildInputEditUrl("legacy/id 1")).not.toContain("password");
   });
 });
 

@@ -7,6 +7,7 @@
 - Review Level: Standard
 - Status: implementation and local verification complete; PR pending
 - Changes: the data inventory stays hidden initially and appears only after submitting registration ID, orchard, variety, year, month, first/second-half, adoption-state, and data-state filters.
+- Correction flow: each result links to Input production `/edit/{registrationId}`. Output passes only the encoded registration ID and never reads, stores, validates, or logs the four-digit correction password.
 - Date rule: first half is days 1–15; second half is day 16 through month end.
 - Safety: Input remains GET-only; no Spreadsheet, ACL, Secret, or Writer change.
 - Verification: typecheck, lint, 39 files / 493 tests, build, and diff check passed.

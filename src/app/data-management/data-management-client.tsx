@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
+  buildInputEditUrl,
   filterAnalysisDataInventoryEntries,
   type AnalysisDataInventory,
   type AnalysisDataInventoryFilter,
@@ -101,6 +102,7 @@ export function DataManagementClient({ dataError, inventory, visibilitySummary }
             <span>{entry.measuredAt ?? "（計測日なし）"}　{entry.treatment ?? "（処理区なし）"}</span>
             <span>{entry.dataStatus} / 有効状態: {entry.activationStatus ?? "空欄（有効扱い）"}</span>
             <small>{entry.reason}</small>
+            <a className="inventory-edit-link" href={buildInputEditUrl(entry.id)} target="_blank" rel="noopener noreferrer">Inputで修正する</a>
           </article>)}
           {pageEntries.length === 0 && <p className="diagnostics-empty">条件に一致するデータはありません。</p>}
           </div>

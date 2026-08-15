@@ -73,6 +73,8 @@ h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
 .inventory-record code { overflow: hidden; color: #536157; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
 .inventory-record > strong, .inventory-record > span { overflow-wrap: anywhere; }
 .inventory-record small { color: #5d6b60; }
+.inventory-edit-link { justify-self: start; margin-top: 3px; border: 1px solid #78917d; border-radius: 6px; padding: 6px 9px; background: #fff; color: #285d36; font-size: .72rem; font-weight: 800; text-decoration: none; }
+.inventory-edit-link:hover { border-color: #285d36; background: #f1f7f2; }
 .inventory-state { flex: 0 0 auto; border-radius: 999px; padding: 3px 7px; font-size: .65rem; font-weight: 800; }
 .inventory-state-included { background: #e4f2e7; color: #1d5c2e; }
 .inventory-state-excluded { background: #fff0d8; color: #795014; }
