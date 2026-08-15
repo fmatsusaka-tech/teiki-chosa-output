@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisDataRecord } from "../../contracts/analysis-data";
-import { buildAnalysisDataInventory } from "./analysis-data-inventory";
+import { buildAnalysisDataInventory, filterAnalysisDataInventoryEntries } from "./analysis-data-inventory";
 
 const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => ({
   id: "id-1", registeredAt: null, measuredAt: "2026-07-01", fiscalYear: 2026, year: 2026, month: 7,
@@ -8,6 +8,30 @@ const record = (overrides: Partial<AnalysisDataRecord>): AnalysisDataRecord => (
   notes: null, diameterCount: null, averageDiameter: 42.1, minimumDiameter: null, maximumDiameter: null,
   brix: 9.3, acidity: 1.4, brixAcidityRatio: null, dataStatus: "正常", activationStatus: null,
   inputMethod: "", enteredBy: null, source: null, ...overrides,
+});
+
+describe("filterAnalysisDataInventoryEntries", () => {
+  const entries = buildAnalysisDataInventory([
+    record({ id: "first", measuredAt: "2026-07-15", orchard: "吉川", variety: "ゆら早生" }),
+    record({ id: "second", measuredAt: "2026-07-16", orchard: "有中", variety: "田口" }),
+    record({ id: "other-month", measuredAt: "2025-08-01", orchard: "吉川", variety: "田口" }),
+  ]).entries;
+
+  const baseFilter = {
+    registrationId: "", orchard: "", variety: "", year: "", month: "", period: "all" as const,
+    state: "all" as const, dataStatus: "all",
+  };
+
+  it("filters registration ID, orchard and variety without fuzzy matching dropdown values", () => {
+    expect(filterAnalysisDataInventoryEntries(entries, { ...baseFilter, registrationId: "SEC" }).map(({ id }) => id)).toEqual(["second"]);
+    expect(filterAnalysisDataInventoryEntries(entries, { ...baseFilter, orchard: "吉川", variety: "田口" }).map(({ id }) => id)).toEqual(["other-month"]);
+  });
+
+  it("filters year, month and first or second half at the 15th-day boundary", () => {
+    const july = { ...baseFilter, year: "2026", month: "07" };
+    expect(filterAnalysisDataInventoryEntries(entries, { ...july, period: "first" }).map(({ id }) => id)).toEqual(["first"]);
+    expect(filterAnalysisDataInventoryEntries(entries, { ...july, period: "second" }).map(({ id }) => id)).toEqual(["second"]);
+  });
 });
 
 describe("buildAnalysisDataInventory", () => {

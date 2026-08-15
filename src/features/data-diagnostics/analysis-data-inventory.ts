@@ -25,6 +25,47 @@ export type AnalysisDataInventory = {
   entries: AnalysisDataInventoryEntry[];
 };
 
+export type AnalysisDataInventoryPeriod = "all" | "first" | "second";
+
+export type AnalysisDataInventoryFilter = {
+  registrationId: string;
+  orchard: string;
+  variety: string;
+  year: string;
+  month: string;
+  period: AnalysisDataInventoryPeriod;
+  state: "all" | AnalysisDataInventoryState;
+  dataStatus: string;
+};
+
+export const filterAnalysisDataInventoryEntries = (
+  entries: readonly AnalysisDataInventoryEntry[],
+  filter: AnalysisDataInventoryFilter,
+): AnalysisDataInventoryEntry[] => {
+  const registrationId = filter.registrationId.trim().toLocaleLowerCase("ja");
+
+  return entries.filter((entry) => {
+    if (registrationId && !entry.id.toLocaleLowerCase("ja").includes(registrationId)) return false;
+    if (filter.orchard && entry.orchard !== filter.orchard) return false;
+    if (filter.variety && entry.variety !== filter.variety) return false;
+    if (filter.state !== "all" && entry.state !== filter.state) return false;
+    if (filter.dataStatus !== "all" && entry.dataStatus !== filter.dataStatus) return false;
+
+    if (filter.year || filter.month || filter.period !== "all") {
+      const matched = entry.measuredAt?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!matched) return false;
+      const [, year, month, dayText] = matched;
+      const day = Number(dayText);
+      if (filter.year && year !== filter.year) return false;
+      if (filter.month && month !== filter.month) return false;
+      if (filter.period === "first" && day > 15) return false;
+      if (filter.period === "second" && day <= 15) return false;
+    }
+
+    return true;
+  });
+};
+
 const inventoryState = (record: AnalysisDataRecord): AnalysisDataInventoryState => {
   if (!isEnabledAnalysisRecord(record)) return "disabled";
   return isIncludedInAnalysis(record) ? "included" : "excluded";

@@ -1,5 +1,17 @@
 # Agent Handoff
 
+## 2026-08-15 Data management search update
+
+- Issue: [#117](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/117)
+- Branch: `codex/data-management-search-117`
+- Review Level: Standard
+- Status: implementation and local verification complete; PR pending
+- Changes: the data inventory stays hidden initially and appears only after submitting registration ID, orchard, variety, year, month, first/second-half, adoption-state, and data-state filters.
+- Date rule: first half is days 1–15; second half is day 16 through month end.
+- Safety: Input remains GET-only; no Spreadsheet, ACL, Secret, or Writer change.
+- Verification: typecheck, lint, 39 files / 493 tests, build, and diff check passed.
+- Next step: commit, push, create Draft PR, verify CI, review, and merge if green.
+
 Claude、Codex、人間の間で共有する作業引き継ぎファイルです。
 
 ## Active Work
