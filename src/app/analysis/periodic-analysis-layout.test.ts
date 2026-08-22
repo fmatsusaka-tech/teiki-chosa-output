@@ -38,7 +38,7 @@ describe("periodic analysis table layout", () => {
   });
 
   it("keeps every harvest prediction column compact on mobile", () => {
-    expect(columns.match(/Prediction:\s*\{[^}]*width:\s*96/g)).toHaveLength(3);
+    expect(columns.match(/Prediction:\s*\{[^}]*width:\s*58/g)).toHaveLength(3);
     expect(columns).not.toMatch(/Prediction:\s*\{[^}]*width:\s*150/);
   });
 
@@ -66,15 +66,15 @@ describe("periodic analysis table layout", () => {
   it("prioritizes the day in the narrow mobile date cell", () => {
     expect(columns).toContain('return match ? `${Number(match[2])}日` : "—"');
     expect(component).toContain("<span title={record.measuredAt}>{displayDay(record.measuredAt)}</span>");
-    expect(stylesheet).toMatch(/\.analysis-identity\s*\{[^}]*grid-template-columns:\s*56px 84px[^}]*flex:\s*0 0 140px/);
-    expect(component).toContain("const tableWidth = 140 + visibleColumns.reduce");
+    expect(stylesheet).toMatch(/\.analysis-identity\s*\{[^}]*grid-template-columns:\s*60px 72px[^}]*flex:\s*0 0 132px/);
+    expect(component).toContain("const tableWidth = 132 + visibleColumns.reduce");
   });
 
   it("places detailed diameter columns after the weather columns", () => {
     const averageIndex = columns.indexOf('diameter: { label: "平均横径"');
     const brixIndex = columns.indexOf('brix: { label: "糖度"');
-    const rainfallIndex = columns.indexOf('rainfall30Days: { label: "30日降水量"');
-    const temperatureIndex = columns.indexOf('temperature30Days: { label: "30日平均気温"');
+    const rainfallIndex = columns.indexOf('rainfall30Days: { label:');
+    const temperatureIndex = columns.indexOf('temperature30Days: { label:');
     const minimumIndex = columns.indexOf('minimumDiameter: { label: "最小横径"');
     const maximumIndex = columns.indexOf('maximumDiameter: { label: "最大横径"');
 
@@ -82,5 +82,19 @@ describe("periodic analysis table layout", () => {
     expect(rainfallIndex).toBeLessThan(temperatureIndex);
     expect(temperatureIndex).toBeLessThan(minimumIndex);
     expect(minimumIndex).toBeLessThan(maximumIndex);
+  });
+
+  it("opens an orchard normal-value comparison from each data row", () => {
+    expect(component).toContain("の平年比較を表示");
+    expect(component).toContain("同じ調査基準月・前後半の平均と比較します");
+    expect(component).toContain("analysis-chart-current");
+    expect(component).toContain("analysis-chart-normal");
+  });
+
+  it("highlights diameter predictions in the 55 to 67 mm target range without showing the unit", () => {
+    expect(component).toContain("diameterPrediction.rawPrediction >= 55");
+    expect(component).toContain("diameterPrediction.rawPrediction <= 67");
+    expect(stylesheet).toMatch(/\.analysis-values \.analysis-size-target\s*\{[^}]*box-shadow:/);
+    expect(columns).not.toContain("mm`");
   });
 });

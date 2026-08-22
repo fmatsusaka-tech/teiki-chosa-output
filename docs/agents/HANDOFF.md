@@ -1,5 +1,18 @@
 # Agent Handoff
 
+## 2026-08-22 Mobile analysis and weather display improvement
+
+- Issue: [#119](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/119)
+- Branch: `codex/fix-mobile-analysis-weather-119`
+- Review Level: Standard
+- Review Result: Approve (single-agent self-review; no blocking findings after checking the complete Issue #119 diff and related tests)
+- Status: implementation and local verification complete; PR pending
+- Changes: compact mobile analysis columns, two-line diameter prediction without units, 55–67 target-range emphasis, selectable Yuasa/Kawabe rainfall, fixed Kawabe temperature, and row-triggered current-year versus prior-year-average charts.
+- Normal-value rule: same orchard, variety category, and treatment; previous years with the same survey month and first/second-half are averaged. Missing values remain missing.
+- Safety: Input, Prediction Master, weather source, ACL, Secrets, and Spreadsheet data are unchanged; GET-only behavior is retained.
+- Verification: typecheck, lint, 39 files / 496 tests, build, and diff check passed. Weather CSV GET returned HTTP 200 with contracted Yuasa/Kawabe headers and data through 2026-08-21.
+- Next step: commit, push, Draft PR, independent review, CI, merge, then deploy the validated revision.
+
 ## 2026-08-15 Data management search update
 
 - Issue: [#117](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/117)

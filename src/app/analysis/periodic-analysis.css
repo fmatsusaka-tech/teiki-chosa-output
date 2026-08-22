@@ -24,8 +24,9 @@
 .analysis-table-scroll { max-width: 100%; overflow-x: auto; overflow-y: visible; border-bottom: 1px solid #d2dbd2; background: #fff; scrollbar-width: thin; }
 .analysis-table { background: #fff; }
 .analysis-column-headings, .analysis-row { display: flex; min-width: 0; height: 44px; border-bottom: 1px solid #e0e6e0; }
-.analysis-column-headings { position: relative; z-index: 9; height: 30px; background: #f8faf7; color: #536157; font-size: .68rem; font-weight: 800; }
-.analysis-identity { position: sticky; left: 0; z-index: 2; display: grid; grid-template-columns: 56px 84px; flex: 0 0 140px; width: 140px; align-items: center; overflow: hidden; border-right: 1px solid #ced8cf; background: inherit; box-shadow: 2px 0 3px rgb(31 47 36 / 8%); }
+.analysis-column-headings { position: relative; z-index: 9; height: 38px; background: #f8faf7; color: #536157; font-size: .64rem; font-weight: 800; }
+.analysis-identity { position: sticky; left: 0; z-index: 2; display: grid; grid-template-columns: 60px 72px; flex: 0 0 132px; width: 132px; align-items: center; overflow: hidden; border-right: 1px solid #ced8cf; background: inherit; box-shadow: 2px 0 3px rgb(31 47 36 / 8%); }
+.analysis-row-selector { margin: 0; border: 0; border-right: 1px solid #ced8cf; border-radius: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .analysis-column-headings .analysis-identity { background: #f8faf7; }
 .analysis-row .analysis-identity { background: #fff; }
 .analysis-identity span { overflow: hidden; padding: 0 4px; text-overflow: ellipsis; white-space: nowrap; }
@@ -34,8 +35,10 @@
 .analysis-orchard-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .84rem; font-weight: 700; }
 .analysis-treatment { overflow: hidden; padding: 0; text-overflow: ellipsis; white-space: nowrap; font-size: .64rem; color: #536157; }
 .analysis-values { display: grid; flex: 1 0 auto; height: 100%; align-items: center; font-size: .82rem; font-variant-numeric: tabular-nums; }
-.analysis-values span { overflow: hidden; padding: 0 6px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
-.analysis-column-headings .analysis-values span { text-align: center; }
+.analysis-values span { overflow: hidden; padding: 0 4px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.analysis-column-headings .analysis-values span { display: flex; align-items: center; justify-content: center; line-height: 1.15; text-align: center; white-space: pre-line; }
+.analysis-values .analysis-prediction-cell { font-size: .7rem; line-height: 1.15; text-align: center; white-space: pre-line; }
+.analysis-values .analysis-size-target { box-shadow: inset 0 -3px #5ca967; font-weight: 900; }
 .analysis-values .analysis-metric-diameter { background: #f1f7fb; }
 .analysis-values .analysis-metric-brix { background: #fff9e8; }
 .analysis-values .analysis-metric-acidity { background: #fff2f5; }
@@ -52,6 +55,23 @@
 .analysis-row:nth-child(even) .analysis-identity { background: #fbfcfa; }
 .analysis-row:hover { background: #f2f7f1; }
 .analysis-row:hover .analysis-identity { background: #f2f7f1; }
+.analysis-normal-panel { margin: 10px 12px; border: 1px solid #cbd8cd; border-radius: 8px; padding: 10px; background: #fff; box-shadow: 0 4px 12px rgb(31 47 36 / 8%); }
+.analysis-normal-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.analysis-normal-heading div { display: grid; gap: 2px; }
+.analysis-normal-heading span { color: #5d6b60; font-size: .72rem; }
+.analysis-normal-heading button { border: 1px solid #aebcaf; border-radius: 4px; padding: 4px 8px; background: #fff; color: #27482e; }
+.analysis-normal-note { margin: 7px 0; color: #5d6b60; font-size: .68rem; line-height: 1.4; }
+.analysis-normal-charts { display: grid; gap: 8px; }
+.analysis-normal-chart { min-width: 0; border-top: 1px solid #e4e9e4; padding-top: 7px; }
+.analysis-normal-chart > strong { font-size: .76rem; }
+.analysis-normal-chart > p { margin: 8px 0; color: #67736a; font-size: .72rem; }
+.analysis-normal-chart svg { display: block; width: 100%; max-height: 126px; overflow: visible; }
+.analysis-normal-chart path { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.analysis-chart-current { stroke: #216b43; }
+.analysis-chart-normal { stroke: #8b7d68; stroke-dasharray: 5 4; }
+.analysis-chart-current-dot { fill: #216b43; }
+.analysis-normal-chart text { fill: #647168; font-size: 9px; text-anchor: middle; }
+.analysis-chart-legend { display: flex; gap: 12px; color: #59675d; font-size: .65rem; }
 
 @media (min-width: 720px) {
   .analysis-page { padding-inline: 18px; }
