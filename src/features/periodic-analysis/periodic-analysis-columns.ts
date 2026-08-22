@@ -7,12 +7,15 @@ import { getFruitSizeCategory } from "../shared/fruit-size";
 export const displayNumber = (value: number | null, digits: number): string => value === null ? "—" : value.toFixed(digits);
 export const displayPrediction = (result: PredictionMetricResult | undefined, digits: number): string => {
   if (!result) return "—";
-  return result.ok ? result.predictedValue.toFixed(digits) : `— ${result.message}`;
+  if (result.ok) return result.predictedValue.toFixed(digits);
+  return isUnsupportedVariety(result.reason) ? "予測なし" : `— ${result.message}`;
 };
+const isUnsupportedVariety = (reason: string): boolean =>
+  reason === "EMPTY_VARIETY" || reason === "UNREGISTERED_VARIETY" || reason === "MODEL_NOT_FOUND";
 /** Displays the diameter prediction with its size category, classified from the unrounded prediction. */
 export const displayDiameterPrediction = (result: PredictionMetricResult | undefined, digits: number): string => {
   if (!result) return "—";
-  if (!result.ok) return `— ${result.message}`;
+  if (!result.ok) return isUnsupportedVariety(result.reason) ? "予測なし" : `— ${result.message}`;
   const category = getFruitSizeCategory(result.rawPrediction);
   const value = result.predictedValue.toFixed(digits);
   return category ? `${value}\n${category}` : value;

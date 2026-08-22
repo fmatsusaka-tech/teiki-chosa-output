@@ -3,7 +3,7 @@
 import "./periodic-analysis.css";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { isIncludedInAnalysis, type AnalysisDataRecord } from "../../contracts/analysis-data";
+import type { AnalysisDataRecord } from "../../contracts/analysis-data";
 import { buildPeriodicAnalysis } from "../../features/periodic-analysis/periodic-analysis";
 import type { PeriodicAnalysisQuery, PeriodicAnalysisRow } from "../../features/periodic-analysis/periodic-analysis.types";
 import { formatDifference } from "../../features/periodic-analysis/periodic-analysis-display";
@@ -11,7 +11,7 @@ import { columns, displayDay, initialColumns, type ColumnContext, type ColumnKey
 import { getVarietyCategory } from "../../features/shared/variety-category";
 import type { PredictionRecordResult } from "../../features/prediction-integration/prediction-integration.types";
 import type { DailyWeatherRecord } from "../../features/weather/weather-30-day";
-import { normalizeTreatment } from "../../features/shared/treatment";
+import { buildYearlyAveragePoints, type YearlyAverageMetric } from "../../features/periodic-analysis/yearly-average-comparison";
 
 const fallbackCategories = ["ゆら早生", "早生(宮川・興津 等、又は山下紅)", "田口", "中生(向山など)", "晩生", "丹生系"];
 const fiscalMonthOrder = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
@@ -32,7 +32,7 @@ const isHarvestTarget = (column: ColumnKey, record: PeriodicAnalysisRow): boolea
 
 const AnalysisRow = ({ context, onSelect, record, visibleColumns }: { context: ColumnContext; onSelect: (record: PeriodicAnalysisRow) => void; record: PeriodicAnalysisRow; visibleColumns: ColumnKey[] }) => (
   <div className="analysis-row">
-    <button className="analysis-identity analysis-row-selector" type="button" onClick={() => onSelect(record)} title={`${record.orchard ?? "—"}${record.treatment ? `／${record.treatment}` : ""}の平年比較を表示${record.originalOrchard && record.originalOrchard !== record.orchard ? `（Input: ${record.originalOrchard}）` : ""}`}>
+    <button className="analysis-identity analysis-row-selector" type="button" onClick={() => onSelect(record)} title={`${record.orchard ?? "—"}${record.treatment ? `／${record.treatment}` : ""}の年別平均比較を表示${record.originalOrchard && record.originalOrchard !== record.orchard ? `（Input: ${record.originalOrchard}）` : ""}`}>
       <span title={record.measuredAt}>{displayDay(record.measuredAt)}</span>
       {record.treatment ? (
         <div className="analysis-orchard-stack">
@@ -59,47 +59,49 @@ const AnalysisRow = ({ context, onSelect, record, visibleColumns }: { context: C
   </div>
 );
 
-type ChartMetric = "averageDiameter" | "brix" | "acidity";
-const chartMetrics: { key: ChartMetric; label: string; digits: number }[] = [
+const chartMetrics: { key: YearlyAverageMetric; label: string; digits: number }[] = [
   { key: "averageDiameter", label: "平均横径", digits: 1 },
   { key: "brix", label: "糖度", digits: 1 },
   { key: "acidity", label: "クエン酸", digits: 2 },
 ];
 
-const NormalComparison = ({ records, selected, onClose }: { records: readonly AnalysisDataRecord[]; selected: PeriodicAnalysisRow; onClose: () => void }) => {
-  const eligible = records.filter((record) => isIncludedInAnalysis(record) && record.orchard === selected.orchard
-    && getVarietyCategory(record.variety) === selected.varietyCategory
-    && normalizeTreatment(record.treatment) === normalizeTreatment(selected.treatment));
-  const current = eligible.filter((record) => record.year === selected.periodYear && record.measuredAt !== null).sort((a, b) => (a.measuredAt ?? "").localeCompare(b.measuredAt ?? ""));
-  const historical = eligible.filter((record) => record.year < selected.periodYear);
+const NormalComparison = ({ records, selected, query, onClose }: { records: readonly AnalysisDataRecord[]; selected: PeriodicAnalysisRow; query: PeriodicAnalysisQuery; onClose: () => void }) => {
   const width = 420;
-  const height = 126;
-  const padding = 24;
+  const height = 175;
+  const paddingX = 24;
+  const chartBottom = 135;
 
-  return <section className="analysis-normal-panel" aria-label="平年値との比較">
-    <div className="analysis-normal-heading"><div><strong>{selected.orchard ?? "—"}{selected.treatment ? `／${selected.treatment}` : ""}</strong><span>{selected.periodYear}年と過去年平均</span></div><button type="button" onClick={onClose}>閉じる</button></div>
-    <p className="analysis-normal-note">同じ園地・品種・処理区の過去年について、同じ調査基準月・前後半の平均と比較します。</p>
+  return <section className="analysis-normal-panel" aria-label="年別平均との比較">
+    <div className="analysis-normal-heading"><div><strong>{selected.orchard ?? "—"}{selected.treatment ? `／${selected.treatment}` : ""}</strong><span>{query.month}月{query.half}の年別平均</span></div><button type="button" onClick={onClose}>閉じる</button></div>
+    <p className="analysis-normal-note">同じ園地・品種・処理区、同じ月・前半／後半の値を年ごとに平均します。差は選択した{selected.periodYear}年平均との差です。</p>
     <div className="analysis-normal-charts">{chartMetrics.map((metric) => {
-      const points = current.flatMap((record, index) => {
-        const actual = record[metric.key];
-        const history = historical.filter((candidate) => candidate.surveyMonth.slice(5) === record.surveyMonth.slice(5) && candidate.surveyPeriod === record.surveyPeriod).map((candidate) => candidate[metric.key]).filter((value): value is number => value !== null && Number.isFinite(value));
-        if (actual === null || !Number.isFinite(actual)) return [];
-        return [{ index, label: record.measuredAt?.slice(5).replace("-", "/") ?? "—", actual, normal: history.length > 0 ? history.reduce((sum, value) => sum + value, 0) / history.length : null }];
-      });
-      const values = points.flatMap((point) => point.normal === null ? [point.actual] : [point.actual, point.normal]);
-      if (points.length === 0 || values.length === 0) return <div className="analysis-normal-chart" key={metric.key}><strong>{metric.label}</strong><p>比較できるデータがありません。</p></div>;
-      const minimum = Math.min(...values);
-      const maximum = Math.max(...values);
-      const span = maximum - minimum || 1;
-      const x = (index: number) => points.length === 1 ? width / 2 : padding + index * (width - padding * 2) / (points.length - 1);
-      const y = (value: number) => height - padding - (value - minimum) * (height - padding * 2) / span;
-      const actualPath = points.map((point, index) => `${index === 0 ? "M" : "L"}${x(index)},${y(point.actual)}`).join(" ");
-      const normalPoints = points.map((point, index) => point.normal === null ? null : { index, value: point.normal }).filter((point): point is { index: number; value: number } => point !== null);
-      const normalPath = normalPoints.map((point, index) => `${index === 0 ? "M" : "L"}${x(point.index)},${y(point.value)}`).join(" ");
-      return <div className="analysis-normal-chart" key={metric.key}><strong>{metric.label}</strong><svg aria-label={`${metric.label}の当年と平年値比較`} role="img" viewBox={`0 0 ${width} ${height}`}>
-        <path className="analysis-chart-current" d={actualPath} />{normalPoints.length > 1 && <path className="analysis-chart-normal" d={normalPath} />}
-        {points.map((point, index) => <g key={`${point.label}-${index}`}><circle className="analysis-chart-current-dot" cx={x(index)} cy={y(point.actual)} r="3" /><text x={x(index)} y={height - 5}>{point.label}</text><title>{`${point.label} 当年 ${point.actual.toFixed(metric.digits)}${point.normal === null ? "、平年値なし" : `、平年 ${point.normal.toFixed(metric.digits)}`}`}</title></g>)}
-      </svg><div className="analysis-chart-legend"><span>● 当年</span><span>--- 過去年平均</span></div></div>;
+      const points = buildYearlyAveragePoints(records, { orchard: selected.orchard, varietyCategory: selected.varietyCategory, treatment: selected.treatment, month: query.month, half: query.half }, metric.key);
+      const selectedAverage = points.find((point) => point.year === selected.periodYear)?.value ?? null;
+      if (points.length === 0 || selectedAverage === null) return <div className="analysis-normal-chart" key={metric.key}><strong>{metric.label}</strong><p>選択年と比較できるデータがありません。</p></div>;
+      const maximum = Math.max(...points.map((point) => point.value), 1);
+      const slotWidth = (width - paddingX * 2) / points.length;
+      const barWidth = Math.min(46, slotWidth * 0.58);
+      const x = (index: number) => paddingX + slotWidth * index + (slotWidth - barWidth) / 2;
+      const y = (value: number) => chartBottom - value / maximum * 98;
+      const differenceText = (value: number) => {
+        const difference = value - selectedAverage;
+        if (Math.abs(difference) < 10 ** (-metric.digits) / 2) return "基準";
+        return `${difference > 0 ? "+" : ""}${difference.toFixed(metric.digits)}`;
+      };
+      return <div className="analysis-normal-chart" key={metric.key}><strong>{metric.label}</strong><svg aria-label={`${metric.label}の年別平均比較`} role="img" viewBox={`0 0 ${width} ${height}`}>
+        <line className="analysis-chart-axis" x1={paddingX} x2={width - paddingX} y1={chartBottom} y2={chartBottom} />
+        {points.map((point, index) => {
+          const top = y(point.value);
+          const selectedYear = point.year === selected.periodYear;
+          return <g key={point.year}>
+            <rect className={selectedYear ? "analysis-chart-bar analysis-chart-bar-selected" : "analysis-chart-bar"} x={x(index)} y={top} width={barWidth} height={chartBottom - top} rx="3" />
+            <text className="analysis-chart-value" x={x(index) + barWidth / 2} y={Math.max(12, top - 5)}>{point.value.toFixed(metric.digits)}</text>
+            <text className={selectedYear ? "analysis-chart-difference analysis-chart-difference-selected" : "analysis-chart-difference"} x={x(index) + barWidth / 2} y="151">{differenceText(point.value)}</text>
+            <text className="analysis-chart-year" x={x(index) + barWidth / 2} y="167">{point.year}</text>
+            <title>{`${point.year}年平均 ${point.value.toFixed(metric.digits)}（${point.count}件）、${selected.periodYear}年平均との差 ${differenceText(point.value)}`}</title>
+          </g>;
+        })}
+      </svg><div className="analysis-chart-legend"><span>濃色：選択年</span><span>差：{selected.periodYear}年平均との差</span></div></div>;
     })}</div>
   </section>;
 };
@@ -157,7 +159,7 @@ export function PeriodicAnalysisClient({ dataError, orchardMasterWarning, predic
       {orchardMasterWarning && <p className="analysis-master-warning" role="status">{orchardMasterWarning}</p>}
       {predictionError && <p className="analysis-prediction-error" role="status">{predictionError}</p>}
       {weatherWarning && <p className="analysis-weather-warning" role="status">{weatherWarning}</p>}
-      {selectedForChart && <NormalComparison records={records} selected={selectedForChart} onClose={() => setSelectedForChart(null)} />}
+      {selectedForChart && <NormalComparison records={records} selected={selectedForChart} query={query} onClose={() => setSelectedForChart(null)} />}
       <div className="analysis-result-summary"><span>検索結果</span><strong>{total}件</strong>{groups.length > 0 && <small>（{groups[0].year}〜{groups[groups.length - 1].year}年）</small>}<button type="button" onClick={() => setShowColumnPicker(!showColumnPicker)}>表示項目</button></div>
       {showColumnPicker && <div className="analysis-column-picker" aria-label="表示項目">
         {(Object.keys(columns) as ColumnKey[]).map((column) => <label key={column}><input checked={visible[column]} type="checkbox" onChange={() => setVisible({ ...visible, [column]: !visible[column] })} />{columns[column].label}</label>)}

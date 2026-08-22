@@ -99,23 +99,29 @@ export const getOrchardSelectionOptions = (
 export const getOrchardFilterOptions = (
   records: readonly AnalysisDataRecord[],
   varietyCategory: string,
+  minimumRecordCount = 1,
 ): OrchardFilterOption[] => {
-  const latest = new Map<string, string | null>();
+  const orchardStats = new Map<string, { count: number; latestMeasuredAt: string | null }>();
   for (const record of records) {
     if (
-      !isEligibleSelection(record)
+      !isEligible(record)
       || !record.orchard
       || getVarietyCategory(record.variety) !== varietyCategory
     ) continue;
 
     const measuredAt = /^\d{4}-\d{2}-\d{2}$/.test(record.measuredAt ?? "") ? record.measuredAt : null;
-    const current = latest.get(record.orchard);
-    if (current === undefined || (measuredAt ?? "") > (current ?? "")) latest.set(record.orchard, measuredAt);
+    const current = orchardStats.get(record.orchard);
+    orchardStats.set(record.orchard, {
+      count: (current?.count ?? 0) + 1,
+      latestMeasuredAt: !current || (measuredAt ?? "") > (current.latestMeasuredAt ?? "")
+        ? measuredAt
+        : current.latestMeasuredAt,
+    });
   }
 
-  return [...latest.entries()].map(([orchard, latestMeasuredAt]) => ({
+  return [...orchardStats.entries()].filter(([, stats]) => stats.count >= minimumRecordCount).map(([orchard, stats]) => ({
     orchard,
-    latestMeasuredAt,
+    latestMeasuredAt: stats.latestMeasuredAt,
     label: orchard,
   })).sort((left, right) =>
     (right.latestMeasuredAt ?? "").localeCompare(left.latestMeasuredAt ?? "")

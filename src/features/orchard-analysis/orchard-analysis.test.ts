@@ -70,6 +70,7 @@ describe("buildOrchardAnalysis", () => {
     const records = [
       record({ id: "a-old", orchard: "園地A", variety: "ゆら早生", treatment: "A", measuredAt: "2026-07-01" }),
       record({ id: "a-new", orchard: "園地A", variety: "ゆら早生", treatment: "B", measuredAt: "2026-07-20" }),
+      record({ id: "b-old", orchard: "園地B", variety: "ゆら早生", treatment: null, measuredAt: "2026-07-10" }),
       record({ id: "b", orchard: "園地B", variety: "ゆら早生", treatment: null, measuredAt: "2026-07-21" }),
       record({ id: "other", orchard: "園地C", variety: "田口", measuredAt: "2026-07-22" }),
     ];
@@ -79,6 +80,17 @@ describe("buildOrchardAnalysis", () => {
       { orchard: "園地A", latestMeasuredAt: "2026-07-20", label: "園地A" },
     ]);
     expect(getOrchardAnalysisFilterOptions(records, "園地A", "ゆら早生").treatments).toEqual(["A", "B"]);
+  });
+
+  it("園地プルダウンは選択品種の分析対象データが2件以上ある園地だけを返す", () => {
+    const records = [
+      record({ id: "one", orchard: "1回だけ", variety: "ゆら早生" }),
+      record({ id: "two-a", orchard: "2回あり", variety: "ゆら早生", treatment: null }),
+      record({ id: "two-b", orchard: "2回あり", variety: "ゆら早生", treatment: "処理A" }),
+      record({ id: "other-variety", orchard: "1回だけ", variety: "田口" }),
+    ];
+
+    expect(getOrchardFilterOptions(records, "ゆら早生", 2).map((option) => option.orchard)).toEqual(["2回あり"]);
   });
 
   it("orders orchard and treatment pairs by latest measured date and recalculates for a year", () => {
