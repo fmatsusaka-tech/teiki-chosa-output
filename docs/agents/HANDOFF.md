@@ -1,5 +1,13 @@
 # Agent Handoff
 
+## 2026-08-22 Harvest prediction target highlighting
+
+- Issue: [#125](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/125)
+- Branch: `codex/highlight-harvest-predictions-125`
+- Review Level: Standard
+- Display contract: highlight the complete harvest-prediction cell in subtle orange when diameter is 55–67, brix is at least 12.0, or acidity is at most 1.1. Missing and failed predictions remain unhighlighted.
+- Safety: display-only change; no Input, Spreadsheet, ACL, Secret, Writer, or calculation-contract change.
+
 ## 2026-08-22 Input formula-error cell recovery
 
 - Issue: [#123](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/123)

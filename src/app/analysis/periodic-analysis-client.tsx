@@ -16,6 +16,20 @@ import { normalizeTreatment } from "../../features/shared/treatment";
 const fallbackCategories = ["ゆら早生", "早生(宮川・興津 等、又は山下紅)", "田口", "中生(向山など)", "晩生", "丹生系"];
 const fiscalMonthOrder = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
 
+const isHarvestTarget = (column: ColumnKey, record: PeriodicAnalysisRow): boolean => {
+  const metrics = record.prediction?.metrics;
+  if (column === "diameterPrediction") {
+    return metrics?.横径.ok === true && metrics.横径.rawPrediction >= 55 && metrics.横径.rawPrediction <= 67;
+  }
+  if (column === "brixPrediction") {
+    return metrics?.糖度.ok === true && metrics.糖度.rawPrediction >= 12;
+  }
+  if (column === "acidityPrediction") {
+    return metrics?.クエン酸.ok === true && metrics.クエン酸.rawPrediction <= 1.1;
+  }
+  return false;
+};
+
 const AnalysisRow = ({ context, onSelect, record, visibleColumns }: { context: ColumnContext; onSelect: (record: PeriodicAnalysisRow) => void; record: PeriodicAnalysisRow; visibleColumns: ColumnKey[] }) => (
   <div className="analysis-row">
     <button className="analysis-identity analysis-row-selector" type="button" onClick={() => onSelect(record)} title={`${record.orchard ?? "—"}${record.treatment ? `／${record.treatment}` : ""}の平年比較を表示${record.originalOrchard && record.originalOrchard !== record.orchard ? `（Input: ${record.originalOrchard}）` : ""}`}>
@@ -36,10 +50,9 @@ const AnalysisRow = ({ context, onSelect, record, visibleColumns }: { context: C
           const differenceTone = differenceValue === undefined ? null : formatDifference(differenceValue, 0).tone;
           const differenceClass = differenceTone === "positive" ? "analysis-positive" : differenceTone === "negative" ? "analysis-negative" : differenceTone === "neutral" ? "analysis-neutral" : "";
           const toneClass = columns[column].tone ? `analysis-metric-${columns[column].tone}` : "";
-          const diameterPrediction = column === "diameterPrediction" ? record.prediction?.metrics.横径 : undefined;
-          const targetSizeClass = diameterPrediction?.ok && diameterPrediction.rawPrediction >= 55 && diameterPrediction.rawPrediction <= 67 ? "analysis-size-target" : "";
+          const harvestTargetClass = isHarvestTarget(column, record) ? "analysis-harvest-target" : "";
           const predictionClass = column.endsWith("Prediction") ? "analysis-prediction-cell" : "";
-          const className = [toneClass, differenceClass, targetSizeClass, predictionClass].filter(Boolean).join(" ") || undefined;
+          const className = [toneClass, differenceClass, harvestTargetClass, predictionClass].filter(Boolean).join(" ") || undefined;
           return <span className={className} key={column} title={value}>{value}</span>;
         })}
     </div>
