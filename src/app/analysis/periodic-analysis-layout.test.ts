@@ -84,11 +84,12 @@ describe("periodic analysis table layout", () => {
     expect(minimumIndex).toBeLessThan(maximumIndex);
   });
 
-  it("opens an orchard normal-value comparison from each data row", () => {
-    expect(component).toContain("の平年比較を表示");
-    expect(component).toContain("同じ調査基準月・前後半の平均と比較します");
-    expect(component).toContain("analysis-chart-current");
-    expect(component).toContain("analysis-chart-normal");
+  it("opens a year-by-year average bar comparison from each data row", () => {
+    expect(component).toContain("の年別平均比較を表示");
+    expect(component).toContain("年別平均");
+    expect(component).toContain("analysis-chart-bar");
+    expect(component).toContain("年平均との差");
+    expect(component).not.toContain("過去年平均");
   });
 
   it("highlights harvest predictions that meet the diameter, brix, and acidity targets", () => {

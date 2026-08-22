@@ -1,5 +1,17 @@
 # Agent Handoff
 
+## 2026-08-22 Analysis clarity improvements
+
+- Issue: [#127](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/127)
+- Branch: `codex/improve-analysis-clarity-127`
+- Review Level: Standard
+- Prediction display: empty, unregistered, and model-unmapped varieties show the compact label `予測なし`; other calculation failures retain their structured reason.
+- Year comparison: selecting a periodic-analysis row shows separate yearly-average bars for the same orchard, variety category, treatment, survey month, and first/second half. The selected year is emphasized and every other bar shows its signed difference from that selected-year average.
+- Orchard filter: `/orchards` only lists orchards with at least two eligible records for the selected variety; treatment selection remains a later independent filter. `/orchards/compare` keeps its existing one-record minimum.
+- Safety: read-only display and pure aggregation changes only; no Input, Spreadsheet, Prediction Master, ACL, Secret, Writer, or calculation-formula change.
+- Verification: targeted 38 tests, typecheck, lint, 40 files / 506 tests, build, and diff check passed.
+- Review: single-agent self-review because delegation was not enabled; no blocking findings after reviewing the Issue #127 diff and related tests.
+
 ## 2026-08-22 Harvest prediction target highlighting
 
 - Issue: [#125](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/125)

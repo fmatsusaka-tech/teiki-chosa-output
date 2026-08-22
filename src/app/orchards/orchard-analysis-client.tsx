@@ -22,11 +22,11 @@ const initialColumns: Record<ColumnKey, boolean> = { diameter: true, brix: true,
 export function OrchardAnalysisClient({ dataError, orchardMasterWarning, records }: { dataError: string | null; orchardMasterWarning: string | null; records: readonly AnalysisDataRecord[] }) {
   const varietyCategories = useMemo(() => getOrchardAnalysisFilterOptions(records).varietyCategories, [records]);
   const initialVariety = varietyCategories[0] ?? "";
-  const initialOrchard = getOrchardFilterOptions(records, initialVariety)[0]?.orchard ?? "";
+  const initialOrchard = getOrchardFilterOptions(records, initialVariety, 2)[0]?.orchard ?? "";
   const [query, setQuery] = useState<OrchardAnalysisQuery>({ orchard: initialOrchard, varietyCategory: initialVariety });
   const [visible, setVisible] = useState(initialColumns);
   const [showColumnPicker, setShowColumnPicker] = useState(false);
-  const orchardOptions = useMemo(() => getOrchardFilterOptions(records, query.varietyCategory), [records, query.varietyCategory]);
+  const orchardOptions = useMemo(() => getOrchardFilterOptions(records, query.varietyCategory, 2), [records, query.varietyCategory]);
   const treatments = useMemo(() => getOrchardAnalysisFilterOptions(records, query.orchard, query.varietyCategory).treatments, [records, query.orchard, query.varietyCategory]);
   const timeline = useMemo(() => buildOrchardAnalysis(records, query), [records, query]);
   const visibleColumns = (Object.keys(visible) as ColumnKey[]).filter((column) => visible[column]);
@@ -35,7 +35,7 @@ export function OrchardAnalysisClient({ dataError, orchardMasterWarning, records
   const valuesTemplate = resultColumns.map((column) => `${columns[column].width}px`).join(" ");
   const tableWidth = 58 + resultColumns.reduce((width, column) => width + columns[column].width, 0);
   const changeVarietyCategory = (varietyCategory: string) => {
-    const orchard = getOrchardFilterOptions(records, varietyCategory)[0]?.orchard ?? "";
+    const orchard = getOrchardFilterOptions(records, varietyCategory, 2)[0]?.orchard ?? "";
     setQuery({ varietyCategory, orchard });
   };
   const changeOrchard = (orchard: string) => {
