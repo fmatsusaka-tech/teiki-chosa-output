@@ -15,13 +15,13 @@ const okResult = (predictedValue: number, rawPrediction: number): PredictionMetr
 });
 
 describe("displayDiameterPrediction", () => {
-  it("shows the rounded value with mm and the size classified from the raw prediction", () => {
-    expect(displayDiameterPrediction(okResult(64.2, 64.16), 1)).toBe("64.2mm（M）");
+  it("shows the rounded value and size on separate lines without a unit", () => {
+    expect(displayDiameterPrediction(okResult(64.2, 64.16), 1)).toBe("64.2\nM");
   });
 
   it("classifies by the raw prediction, not the rounded display value", () => {
     // Rounds to 67.0 (L threshold) but the raw value is still under 67.0 (M).
-    expect(displayDiameterPrediction(okResult(67.0, 66.96), 1)).toBe("67.0mm（M）");
+    expect(displayDiameterPrediction(okResult(67.0, 66.96), 1)).toBe("67.0\nM");
   });
 
   it("shows the failure message when the prediction is not calculable", () => {
