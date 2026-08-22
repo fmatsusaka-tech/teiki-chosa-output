@@ -91,10 +91,16 @@ describe("periodic analysis table layout", () => {
     expect(component).toContain("analysis-chart-normal");
   });
 
-  it("highlights diameter predictions in the 55 to 67 mm target range without showing the unit", () => {
-    expect(component).toContain("diameterPrediction.rawPrediction >= 55");
-    expect(component).toContain("diameterPrediction.rawPrediction <= 67");
-    expect(stylesheet).toMatch(/\.analysis-values \.analysis-size-target\s*\{[^}]*box-shadow:/);
+  it("highlights harvest predictions that meet the diameter, brix, and acidity targets", () => {
+    expect(component).toContain('column === "diameterPrediction"');
+    expect(component).toContain("metrics.横径.rawPrediction >= 55");
+    expect(component).toContain("metrics.横径.rawPrediction <= 67");
+    expect(component).toContain('column === "brixPrediction"');
+    expect(component).toContain("metrics.糖度.rawPrediction >= 12");
+    expect(component).toContain('column === "acidityPrediction"');
+    expect(component).toContain("metrics.クエン酸.rawPrediction <= 1.1");
+    expect(component).toContain('"analysis-harvest-target"');
+    expect(stylesheet).toMatch(/\.analysis-values \.analysis-harvest-target\s*\{[^}]*background:\s*#ffe5bd[^}]*box-shadow:/);
     expect(columns).not.toContain("mm`");
   });
 });
