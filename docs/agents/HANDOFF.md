@@ -1,5 +1,14 @@
 # Agent Handoff
 
+## 2026-08-22 Cloud live-data read recovery
+
+- Issue: [#121](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/121)
+- Branch: `codex/fix-cloud-live-data-read-121`
+- Review Level: Standard
+- Cause: Google Sheets omits `row.values` for fully blank GridData rows, and the weather decoder incorrectly rejected valid negative mean temperatures.
+- Scope: normalize omitted row values to an empty row, keep malformed non-array rows rejected, accept negative Kawabe temperature, and keep negative precipitation rejected.
+- Safety: GET-only behavior is unchanged; Input, weather source, Spreadsheet, ACL, Secrets, and prediction calculations are not modified.
+
 ## 2026-08-22 Mobile analysis and weather display improvement
 
 - Issue: [#119](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/119)

@@ -205,7 +205,7 @@ describe("GoogleSheetsApiAnalysisDataSource", () => {
     ["rowData欠落", { properties: { title: analysisDataSheetTitle }, data: [{}] }],
     ["空rowData", { properties: { title: analysisDataSheetTitle }, data: [{ rowData: [] }] }],
     ["不正row", { properties: { title: analysisDataSheetTitle }, data: [{ rowData: [null] }] }],
-    ["values欠落", { properties: { title: analysisDataSheetTitle }, data: [{ rowData: [{}] }] }],
+    ["valuesが非配列", { properties: { title: analysisDataSheetTitle }, data: [{ rowData: [{ values: null }] }] }],
     ["不正cell", { properties: { title: analysisDataSheetTitle }, data: [{ rowData: [{ values: [null] }] }] }],
     ["不正effectiveValue", { properties: { title: analysisDataSheetTitle }, data: [{ rowData: [{ values: [{ effectiveValue: [] }] }] }] }],
   ])("不正な%s構造を拒否する", async (_name, sheet) => {
@@ -221,6 +221,18 @@ describe("GoogleSheetsApiAnalysisDataSource", () => {
       ] }],
     }] });
     await expect(read(fetchFor(payload))).resolves.toEqual([["A", "B"], ["value"]]);
+  });
+
+  it("valuesが省略された完全空行を0で補わず空行として渡す", async () => {
+    const payload = spreadsheet({ sheets: [{
+      properties: { title: analysisDataSheetTitle },
+      data: [{ rowData: [
+        { values: [cell({ stringValue: "A" })] },
+        {},
+        { values: [cell({ stringValue: "B" })] },
+      ] }],
+    }] });
+    await expect(read(fetchFor(payload))).resolves.toEqual([["A"], [], ["B"]]);
   });
 
   it("不正な値型と複数値を拒否する", async () => {
