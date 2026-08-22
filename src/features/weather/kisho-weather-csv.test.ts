@@ -20,6 +20,16 @@ describe("kisho weather CSV decoder", () => {
     expect(() => decodeKishoWeatherCsv("年月日\n2026/7/31")).toThrow(KishoWeatherCsvError);
     expect(() => decodeKishoWeatherCsv(`${header}\n2026/2/30,1,2,3`)).toThrow(/日付/);
     expect(() => decodeKishoWeatherCsv(`${header}\n2026/7/31,-1,2,3`)).toThrow(/値/);
+    expect(() => decodeKishoWeatherCsv(`${header}\n2026/7/31,1,2,-3`)).toThrow(/値/);
+  });
+
+  it("accepts a negative daily mean temperature without treating it as missing", () => {
+    expect(decodeKishoWeatherCsv(`${header}\n2026/1/1,0,-2.5,0`)[1]).toEqual({
+      date: "2026-01-01",
+      stationId: "kawabe",
+      precipitationMm: 0,
+      meanTemperatureC: -2.5,
+    });
   });
 
   it("switches the 30-day rainfall total between Yuasa and Kawabe while temperature remains Kawabe", () => {

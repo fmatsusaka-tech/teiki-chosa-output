@@ -121,7 +121,14 @@ const decodeRows = (sheet: Record<string, unknown>): readonly (readonly unknown[
     );
   }
   return rowData.map((row) => {
-    if (!isRecord(row) || !Array.isArray(row.values)) {
+    if (!isRecord(row)) {
+      throw new AnalysisDataSourceError(
+        "INVALID_RESPONSE",
+        "調査データの行構造が不正です。",
+      );
+    }
+    if (row.values === undefined) return [];
+    if (!Array.isArray(row.values)) {
       throw new AnalysisDataSourceError(
         "INVALID_RESPONSE",
         "調査データの行構造が不正です。",

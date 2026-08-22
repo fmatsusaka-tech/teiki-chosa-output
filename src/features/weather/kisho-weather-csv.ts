@@ -35,10 +35,15 @@ const parseCsvRows = (text: string): string[][] => {
   return rows;
 };
 
-const parseOptionalNumber = (value: string | undefined, rowNumber: number, header: string): number | null => {
+const parseOptionalNumber = (
+  value: string | undefined,
+  rowNumber: number,
+  header: string,
+  options: { allowNegative: boolean },
+): number | null => {
   if (value === undefined || value.trim() === "") return null;
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0) {
+  if (!Number.isFinite(parsed) || (!options.allowNegative && parsed < 0)) {
     throw new KishoWeatherCsvError("INVALID_VALUE", `気象データの値が不正です（${rowNumber}行目・${header}）。`);
   }
   return parsed;
@@ -78,14 +83,14 @@ export const decodeKishoWeatherCsv = (text: string): DailyWeatherRecord[] => {
       {
         date,
         stationId: "yuasa",
-        precipitationMm: parseOptionalNumber(row[indexes["降水量（湯浅）"]], rowNumber, "降水量（湯浅）"),
+        precipitationMm: parseOptionalNumber(row[indexes["降水量（湯浅）"]], rowNumber, "降水量（湯浅）", { allowNegative: false }),
         meanTemperatureC: null,
       },
       {
         date,
         stationId: "kawabe",
-        precipitationMm: parseOptionalNumber(row[indexes["降水量（川辺・比較用）"]], rowNumber, "降水量（川辺）"),
-        meanTemperatureC: parseOptionalNumber(row[indexes["平均気温（川辺）"]], rowNumber, "平均気温（川辺）"),
+        precipitationMm: parseOptionalNumber(row[indexes["降水量（川辺・比較用）"]], rowNumber, "降水量（川辺）", { allowNegative: false }),
+        meanTemperatureC: parseOptionalNumber(row[indexes["平均気温（川辺）"]], rowNumber, "平均気温（川辺）", { allowNegative: true }),
       },
     ];
   });
