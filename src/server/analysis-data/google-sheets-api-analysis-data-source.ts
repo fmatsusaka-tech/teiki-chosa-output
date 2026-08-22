@@ -82,6 +82,13 @@ const effectiveValue = (value: unknown): string | number | boolean | null => {
       "調査データのセル値構造が不正です。",
     );
   }
+  if (raw.errorValue !== undefined) {
+    if (Object.keys(raw).length === 1 && isRecord(raw.errorValue)) return null;
+    throw new AnalysisDataSourceError(
+      "INVALID_RESPONSE",
+      "調査データのセル値構造が不正です。",
+    );
+  }
   const entries = ["stringValue", "numberValue", "boolValue"].filter(
     (key) => raw[key] !== undefined,
   );

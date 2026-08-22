@@ -223,6 +223,28 @@ describe("GoogleSheetsApiAnalysisDataSource", () => {
     await expect(read(fetchFor(payload))).resolves.toEqual([["A", "B"], ["value"]]);
   });
 
+  it("Google Sheetsの数式エラーセルを0へ変換せず欠測として渡す", async () => {
+    const payload = spreadsheet({ sheets: [{
+      properties: { title: analysisDataSheetTitle },
+      data: [{ rowData: [{ values: [
+        cell({ stringValue: "値" }),
+        cell({ errorValue: { type: "DIVIDE_BY_ZERO", message: "not exposed" } }),
+      ] }] }],
+    }] });
+    await expect(read(fetchFor(payload))).resolves.toEqual([["値", null]]);
+  });
+
+  it("数式エラーと通常値が混在する不正なセルを拒否する", async () => {
+    const payload = spreadsheet({ sheets: [{
+      properties: { title: analysisDataSheetTitle },
+      data: [{ rowData: [{ values: [cell({
+        errorValue: { type: "DIVIDE_BY_ZERO" },
+        numberValue: 0,
+      })] }] }],
+    }] });
+    await expect(read(fetchFor(payload))).rejects.toMatchObject({ code: "INVALID_RESPONSE" });
+  });
+
   it("valuesが省略された完全空行を0で補わず空行として渡す", async () => {
     const payload = spreadsheet({ sheets: [{
       properties: { title: analysisDataSheetTitle },
