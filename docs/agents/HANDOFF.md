@@ -1,5 +1,14 @@
 # Agent Handoff
 
+## 2026-08-22 Input formula-error cell recovery
+
+- Issue: [#123](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/123)
+- Branch: `codex/handle-input-error-cells-123`
+- Review Level: Standard
+- Evidence: the live read returned 25 `effectiveValue.errorValue` cells among 1,102 GridData rows; no cell values or identifiers were logged.
+- Contract: a standalone Google Sheets formula-error cell is treated as missing (`null`), never zero. Mixed or malformed effective values remain rejected.
+- Safety: Input remains GET-only; no Spreadsheet, ACL, Secret, weather, or prediction change.
+
 ## 2026-08-22 Cloud live-data read recovery
 
 - Issue: [#121](https://github.com/fmatsusaka-tech/teiki-chosa-output/issues/121)
